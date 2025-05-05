@@ -1,0 +1,18 @@
+package project.hotel_booking_system.dto.request.payment_request;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import project.hotel_booking_system.enums.PaymentStatus;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class PaymentStatusUpdateDTO {
+    PaymentStatus status;
+} 
