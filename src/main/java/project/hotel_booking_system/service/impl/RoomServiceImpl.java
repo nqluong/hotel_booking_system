@@ -1,19 +1,23 @@
 package project.hotel_booking_system.service.impl;
 
 
+import java.time.LocalDateTime;
+import java.util.EnumSet;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
 import project.hotel_booking_system.dto.request.room_request.RoomCreationRequest;
 import project.hotel_booking_system.dto.request.room_request.RoomUpdateRequest;
 import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.dto.response.RoomImageResponse;
 import project.hotel_booking_system.dto.response.RoomResponse;
+import project.hotel_booking_system.enums.ImageType;
 import project.hotel_booking_system.enums.RoomStatus;
 import project.hotel_booking_system.exception.AppException;
 import project.hotel_booking_system.exception.ErrorCode;
@@ -23,10 +27,6 @@ import project.hotel_booking_system.model.Room;
 import project.hotel_booking_system.repository.RoomImageRepository;
 import project.hotel_booking_system.repository.RoomRepository;
 import project.hotel_booking_system.service.RoomService;
-import java.time.LocalDateTime;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,8 +39,8 @@ public class RoomServiceImpl implements RoomService {
     RoomImageRepository roomImageRepository;
 
     @Override
-    public RoomResponse getRoomByRoomNumber(String num) {
-        Room room =roomRepository.findByRoomNumber(num).orElseThrow(
+    public RoomResponse getRoomByRoomNumber(Long num) {
+        Room room =roomRepository.findById(num).orElseThrow(
                 () ->  new AppException(ErrorCode.ROOM_NOT_FOUND)
         );
 
@@ -59,7 +59,13 @@ public class RoomServiceImpl implements RoomService {
 
         List<RoomResponse> roomResponses = rooms.getContent()
                 .stream()
-                .map(roomMapper::toRoomResponse)
+                .map(room -> {
+                    List<RoomImageResponse> thumbnailImages = roomImageRepository.findByRoom_IdAndImageType(room.getId(), ImageType.THUMBNAIL)
+                            .stream()
+                            .map(roomImageMapper::toImageResponse)
+                            .toList();
+                    return roomMapper.toRoomResponse(room, thumbnailImages);
+                })
                 .toList();
 
         return PaginationResponse.<RoomResponse>builder()
@@ -69,7 +75,6 @@ public class RoomServiceImpl implements RoomService {
                 .totalElements(rooms.getTotalElements())
                 .pageSize(rooms.getSize())
                 .build();
-
     }
 
     @Override
@@ -92,8 +97,8 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public RoomResponse updateRoom(String num, RoomUpdateRequest roomUpdateRequest) {
-        Room room = roomRepository.findByRoomNumber(num).orElseThrow(
+    public RoomResponse updateRoom(Long num, RoomUpdateRequest roomUpdateRequest) {
+        Room room = roomRepository.findById(num).orElseThrow(
                 () -> new AppException(ErrorCode.ROOM_NOT_FOUND)
         );
         if(!EnumSet.allOf(RoomStatus.class).contains(roomUpdateRequest.getRoomStatus())){
@@ -108,8 +113,8 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public void deleteRoom(String num) {
-        Room room = roomRepository.findByRoomNumber(num).orElseThrow(
+    public void deleteRoom(Long num) {
+        Room room = roomRepository.findById(num).orElseThrow(
                 () -> new AppException(ErrorCode.ROOM_NOT_FOUND)
         );
         roomRepository.delete(room);

@@ -45,7 +45,7 @@ public class RoomController {
     }
 
     @GetMapping("/{number}")
-    ApiResponseDTO<RoomResponse> getByRoomNumber(@PathVariable("number") String num){
+    ApiResponseDTO<RoomResponse> getByRoomNumber(@PathVariable("number") Long num){
         return ApiResponseDTO.<RoomResponse>builder()
                 .time(LocalDateTime.now())
                 .status(HttpStatus.OK.value())
@@ -54,7 +54,7 @@ public class RoomController {
     }
 
     @PutMapping("/{number}")
-    ApiResponseDTO<RoomResponse> updateRoom(@PathVariable("number") String num,
+    ApiResponseDTO<RoomResponse> updateRoom(@PathVariable("number") Long num,
                                             @RequestBody RoomUpdateRequest request){
         return ApiResponseDTO.<RoomResponse>builder()
                 .time(LocalDateTime.now())
@@ -64,7 +64,7 @@ public class RoomController {
     }
 
     @DeleteMapping("/{number}")
-    ApiResponseDTO<String> deleteRoom(@PathVariable("number") String num){
+    ApiResponseDTO<String> deleteRoom(@PathVariable("number") Long num){
         roomService.deleteRoom(num);
         return ApiResponseDTO.<String>builder()
                 .time(LocalDateTime.now())

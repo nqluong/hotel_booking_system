@@ -10,14 +10,14 @@ import java.util.List;
 
 public interface RoomService {
 
-    RoomResponse getRoomByRoomNumber(String num);
+    RoomResponse getRoomByRoomNumber(Long num);
 
     PaginationResponse<RoomResponse> getAllRoom(Pageable pageable);
 
     RoomResponse createRoom(RoomCreationRequest roomCreationRequest);
 
-    RoomResponse updateRoom(String id, RoomUpdateRequest roomUpdateRequest);
+    RoomResponse updateRoom(Long id, RoomUpdateRequest roomUpdateRequest);
 
-    void deleteRoom(String id);
+    void deleteRoom(Long id);
 
 }

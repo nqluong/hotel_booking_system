@@ -21,7 +21,7 @@ public class RoomImageController {
     private final RoomImageServiceImpl roomImageService;
 
     @PostMapping("/upload/{number}")
-    ApiResponseDTO<RoomImageResponse> uploadImage(@PathVariable("number") String number,
+    ApiResponseDTO<RoomImageResponse> uploadImage(@PathVariable("number") Long number,
                                                   @RequestParam("file") MultipartFile file,
                                                   @RequestParam("imageType")ImageType imageType){
 
@@ -37,7 +37,7 @@ public class RoomImageController {
     }
 
     @GetMapping("/{number}")
-    ApiResponseDTO<List<RoomImageResponse>> getImagesByRoomNumber(@PathVariable("number") String number){
+    ApiResponseDTO<List<RoomImageResponse>> getImagesByRoomNumber(@PathVariable("number") Long number){
         return ApiResponseDTO.<List<RoomImageResponse>>builder()
                 .time(LocalDateTime.now())
                 .status(HttpStatus.OK.value())
@@ -46,7 +46,7 @@ public class RoomImageController {
     }
 
     @DeleteMapping("/{number}/{imageId}")
-    ApiResponseDTO<String> deleteRoomImage(@PathVariable String number,
+    ApiResponseDTO<String> deleteRoomImage(@PathVariable Long number,
                                            @PathVariable Long imageId){
         roomImageService.deleteImageByRoomNumber(number,imageId);
         return ApiResponseDTO.<String>builder()
@@ -57,7 +57,7 @@ public class RoomImageController {
     }
 
     @PutMapping("/{number}/{id}")
-    ApiResponseDTO<RoomImageResponse> updateImage(@PathVariable String number,
+    ApiResponseDTO<RoomImageResponse> updateImage(@PathVariable Long number,
                                                   @PathVariable Long id,
                                                   @RequestParam("file") MultipartFile file){
         return ApiResponseDTO.<RoomImageResponse>builder()
@@ -68,7 +68,7 @@ public class RoomImageController {
     }
 
     @PutMapping("/{number}/{id}/type")
-    ApiResponseDTO<RoomImageResponse> updateImageType(@PathVariable String number,
+    ApiResponseDTO<RoomImageResponse> updateImageType(@PathVariable Long number,
                                                       @PathVariable Long id,
                                                       @RequestParam("type") ImageType type){
         return ApiResponseDTO.<RoomImageResponse>builder()

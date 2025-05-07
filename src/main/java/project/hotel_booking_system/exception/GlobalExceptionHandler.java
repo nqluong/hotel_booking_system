@@ -55,11 +55,36 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponseDTO<Object> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         log.error("Type mismatch: {}", ex.getMessage());
+        
+        String message;
+        if (ex.getParameter().getParameterType().equals(LocalDate.class)) {
+            String dateValue = String.valueOf(ex.getValue());
+            message = "Invalid date: '" + dateValue + "'. Please use a valid date in format YYYY-MM-DD";
+
+            // Kiểm tra nếu là ngày 31 tháng 2
+            if (dateValue.contains("02-31") || dateValue.contains("-2-31")) {
+                message = "Date '" + dateValue + "' is invalid. February never has 31 days.";
+            }
+            // Kiểm tra nếu là ngày 30 tháng 2
+            else if (dateValue.contains("02-30") || dateValue.contains("-2-30")) {
+                message = "Date '" + dateValue + "' is invalid. February never has 30 days.";
+            }
+            // Kiểm tra các tháng 30 ngày
+            else if ((dateValue.contains("04-31") || dateValue.contains("-4-31") ||
+                    dateValue.contains("06-31") || dateValue.contains("-6-31") ||
+                    dateValue.contains("09-31") || dateValue.contains("-9-31") ||
+                    dateValue.contains("11-31") || dateValue.contains("-11-31"))) {
+                message = "Date '" + dateValue + "' is invalid. This month only has 30 days.";
+            }
+        } else {
+            message = "Invalid parameter: " + ex.getName() + " should be a valid " + ex.getRequiredType().getSimpleName();
+        }
+
         return ApiResponseDTO.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
                 .time(LocalDateTime.now())
                 .success(false)
-                .message("Invalid parameter: " + ex.getName() + " should be a valid " + ex.getRequiredType().getSimpleName())
+                .message(message)
                 .result(null)
                 .build();
     }
@@ -121,42 +146,6 @@ public class GlobalExceptionHandler {
                 .time(LocalDateTime.now())
                 .message("Validation error")
                 .result(errors)
-                .build();
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ApiResponseDTO<String> handleDateFormatException(MethodArgumentTypeMismatchException ex) {
-
-        String simplifiedMessage = "Invalid date format";
-
-
-        if (ex.getParameter().getParameterType().equals(LocalDate.class)) {
-            String dateValue = String.valueOf(ex.getValue());
-            simplifiedMessage = "Invalid date: '" + dateValue + "'. Please use a valid date in format YYYY-MM-DD";
-
-            // Kiểm tra nếu là ngày 31 tháng 2
-            if (dateValue.contains("02-31") || dateValue.contains("-2-31")) {
-                simplifiedMessage = "Date '" + dateValue + "' is invalid. February never has 31 days.";
-            }
-            // Kiểm tra nếu là ngày 30 tháng 2
-            else if (dateValue.contains("02-30") || dateValue.contains("-2-30")) {
-                simplifiedMessage = "Date '" + dateValue + "' is invalid. February never has 30 days.";
-            }
-            // Kiểm tra các tháng 30 ngày
-            else if ((dateValue.contains("04-31") || dateValue.contains("-4-31") ||
-                    dateValue.contains("06-31") || dateValue.contains("-6-31") ||
-                    dateValue.contains("09-31") || dateValue.contains("-9-31") ||
-                    dateValue.contains("11-31") || dateValue.contains("-11-31"))) {
-                simplifiedMessage = "Date '" + dateValue + "' is invalid. This month only has 30 days.";
-            }
-        }
-
-        return ApiResponseDTO.<String>builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .time(LocalDateTime.now())
-                .success(false)
-                .message("Date conversion error")
-                .result(simplifiedMessage)
                 .build();
     }
 }

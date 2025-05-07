@@ -9,13 +9,13 @@ import java.util.List;
 
 public interface RoomImageService {
 
-    RoomImageResponse uploadRoomImage(String roomNumber, MultipartFile file, ImageType imageType) ;
+    RoomImageResponse uploadRoomImage(Long roomId, MultipartFile file, ImageType imageType) ;
 
-    List<RoomImageResponse> getAllImagesByRoomNumber(String number);
+    List<RoomImageResponse> getAllImagesByRoomNumber(Long roomId);
 
-    RoomImageResponse updateRoomImage(String number, Long id, MultipartFile file);
+    RoomImageResponse updateRoomImage(Long roomId, Long id, MultipartFile file);
 
-    RoomImageResponse updateImageType(String number, Long id, ImageType type);
+    RoomImageResponse updateImageType(Long roomId, Long id, ImageType type);
 
-    void deleteImageByRoomNumber(String number, Long id);
+    void deleteImageByRoomNumber(Long roomId, Long id);
 }

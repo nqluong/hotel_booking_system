@@ -33,9 +33,9 @@ public class RoomImageServiceImpl implements RoomImageService {
     FileStorageService fileStorageService;
 
     @Override
-    public RoomImageResponse uploadRoomImage(String roomNumber, MultipartFile file, ImageType imageType) {
+    public RoomImageResponse uploadRoomImage(Long roomId, MultipartFile file, ImageType imageType) {
 
-            Room room = roomRepository.findByRoomNumber(roomNumber).orElseThrow(
+            Room room = roomRepository.findById(roomId).orElseThrow(
                     () ->  new AppException(ErrorCode.ROOM_NOT_FOUND)
             );
 
@@ -54,8 +54,8 @@ public class RoomImageServiceImpl implements RoomImageService {
     }
 
     @Override
-    public List<RoomImageResponse> getAllImagesByRoomNumber(String number) {
-        Room room = roomRepository.findByRoomNumber(number).orElseThrow(
+    public List<RoomImageResponse> getAllImagesByRoomNumber(Long roomId) {
+        Room room = roomRepository.findById(roomId).orElseThrow(
                 () ->  new AppException(ErrorCode.ROOM_NOT_FOUND)
         );
         return roomImageRepository.findByRoom_Id(room.getId())
@@ -66,8 +66,8 @@ public class RoomImageServiceImpl implements RoomImageService {
     }
 
     @Override
-    public RoomImageResponse updateRoomImage(String number, Long id, MultipartFile file) {
-        Room room = roomRepository.findByRoomNumber(number).orElseThrow(
+    public RoomImageResponse updateRoomImage(Long number, Long id, MultipartFile file) {
+        Room room = roomRepository.findById(number).orElseThrow(
                 () -> new AppException(ErrorCode.ROOM_NOT_FOUND)
         );
         RoomImage image = roomImageRepository.findByIdAndRoom(id, room)
@@ -83,8 +83,8 @@ public class RoomImageServiceImpl implements RoomImageService {
     }
 
     @Override
-    public RoomImageResponse updateImageType(String number, Long id, ImageType type) {
-        Room room = roomRepository.findByRoomNumber(number).orElseThrow(
+    public RoomImageResponse updateImageType(Long number, Long id, ImageType type) {
+        Room room = roomRepository.findById(number).orElseThrow(
                 () -> new AppException(ErrorCode.ROOM_NOT_FOUND)
         );
         RoomImage image = roomImageRepository.findByIdAndRoom(id, room)
@@ -95,8 +95,8 @@ public class RoomImageServiceImpl implements RoomImageService {
     }
 
     @Override
-    public void deleteImageByRoomNumber(String number, Long id) {
-        Room room = roomRepository.findByRoomNumber(number).orElseThrow(
+    public void deleteImageByRoomNumber(Long number, Long id) {
+        Room room = roomRepository.findById(number).orElseThrow(
                 () -> new AppException(ErrorCode.ROOM_NOT_FOUND)
         );
 
