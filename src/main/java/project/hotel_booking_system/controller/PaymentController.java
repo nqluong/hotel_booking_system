@@ -25,7 +25,7 @@ import project.hotel_booking_system.enums.PaymentStatus;
 import project.hotel_booking_system.service.PaymentService;
 
 @RestController
-@RequestMapping("/api/admin/payments")
+@RequestMapping("/admin/payments")
 @RequiredArgsConstructor
 @Tag(name = "Payment Management", description = "APIs for managing payments")
 public class PaymentController {

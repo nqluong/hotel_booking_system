@@ -25,7 +25,7 @@ import project.hotel_booking_system.enums.BookingStatus;
 import project.hotel_booking_system.service.AdminBookingService;
 
 @RestController
-@RequestMapping("/api/admin/bookings")
+@RequestMapping("/admin/bookings")
 @RequiredArgsConstructor
 @Tag(name = "Admin Booking Management", description = "Admin APIs for managing hotel reservations")
 public class AdminBookingController {

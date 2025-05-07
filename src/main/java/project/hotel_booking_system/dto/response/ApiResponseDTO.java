@@ -18,16 +18,8 @@ public class ApiResponseDTO<T> {
     
     @Builder.Default
     LocalDateTime time = LocalDateTime.now();
-    
+
     boolean success;
     String message;
     T result;
-    
-    public ApiResponseDTO(boolean success, String message, T result) {
-        this.success = success;
-        this.message = message;
-        this.result = result;
-        this.status = success ? 200 : 400;
-        this.time = LocalDateTime.now();
-    }
 }
