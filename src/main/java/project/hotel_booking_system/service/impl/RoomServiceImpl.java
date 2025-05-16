@@ -2,6 +2,7 @@ package project.hotel_booking_system.service.impl;
 
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import project.hotel_booking_system.dto.request.room_request.RoomCreationRequest;
+import project.hotel_booking_system.dto.request.room_request.RoomSearchRequest;
 import project.hotel_booking_system.dto.request.room_request.RoomUpdateRequest;
 import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.dto.response.RoomImageResponse;
@@ -118,5 +120,80 @@ public class RoomServiceImpl implements RoomService {
                 () -> new AppException(ErrorCode.ROOM_NOT_FOUND)
         );
         roomRepository.delete(room);
+    }
+    
+    @Override
+    public PaginationResponse<RoomResponse> searchAvailableRooms(RoomSearchRequest searchRequest, Pageable pageable) {
+
+        if (searchRequest.getCheckInDate() != null && searchRequest.getCheckOutDate() != null) {
+            Date now = new Date();
+            if (searchRequest.getCheckInDate().before(now)) {
+                throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+            }
+            if (searchRequest.getCheckOutDate().before(searchRequest.getCheckInDate())) {
+                throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+            }
+        }
+
+        Page<Room> rooms;
+        if (searchRequest.getCheckInDate() != null && searchRequest.getCheckOutDate() != null) {
+            // If dates are provided, use the date-based search
+            rooms = roomRepository.searchAvailableRooms(
+                    searchRequest.getCheckInDate(),
+                    searchRequest.getCheckOutDate(),
+                    searchRequest.getRoomType(),
+                    searchRequest.getMinPrice(),
+                    searchRequest.getMaxPrice(),
+                    RoomStatus.AVAILABLE,
+                    pageable
+            );
+        } else if (searchRequest.getRoomType() != null && searchRequest.getMinPrice() != null && searchRequest.getMaxPrice() != null) {
+            // If only room type and price range are provided
+            rooms = roomRepository.findByRoomTypeAndPriceBetweenAndRoomStatus(
+                    searchRequest.getRoomType(),
+                    searchRequest.getMinPrice(),
+                    searchRequest.getMaxPrice(),
+                    RoomStatus.AVAILABLE,
+                    pageable
+            );
+        } else if (searchRequest.getRoomType() != null) {
+            // If only room type is provided
+            rooms = roomRepository.findByRoomTypeAndRoomStatus(
+                    searchRequest.getRoomType(),
+                    RoomStatus.AVAILABLE,
+                    pageable
+            );
+        } else if (searchRequest.getMinPrice() != null && searchRequest.getMaxPrice() != null) {
+            // If only price range is provided
+            rooms = roomRepository.findByPriceBetweenAndRoomStatus(
+                    searchRequest.getMinPrice(),
+                    searchRequest.getMaxPrice(),
+                    RoomStatus.AVAILABLE,
+                    pageable
+            );
+        } else {
+            // If no specific criteria, return all available rooms
+            rooms = roomRepository.findAll(pageable);
+        }
+        
+        // Map the results to DTOs with thumbnail images
+        List<RoomResponse> roomResponses = rooms.getContent()
+                .stream()
+                .map(room -> {
+                    List<RoomImageResponse> thumbnailImages = roomImageRepository.findByRoom_IdAndImageType(room.getId(), ImageType.THUMBNAIL)
+                            .stream()
+                            .map(roomImageMapper::toImageResponse)
+                            .toList();
+                    return roomMapper.toRoomResponse(room, thumbnailImages);
+                })
+                .toList();
+
+        return PaginationResponse.<RoomResponse>builder()
+                .content(roomResponses)
+                .currentPage(rooms.getNumber())
+                .totalPages(rooms.getTotalPages())
+                .totalElements(rooms.getTotalElements())
+                .pageSize(rooms.getSize())
+                .build();
     }
 }

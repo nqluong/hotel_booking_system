@@ -4,7 +4,7 @@ server:
     context-path: /hotelbooking
 spring:
   datasource:
-    url: ${DBMS_CONNECTION}
+    url: "jdbc:mysql://localhost:${DBMS_PORT}/${DBMS_NAME}"
     driverClassName: "com.mysql.cj.jdbc.Driver"
     username: ${DBMS_USERNAME}
     password: ${DBMS_PASSWORD}

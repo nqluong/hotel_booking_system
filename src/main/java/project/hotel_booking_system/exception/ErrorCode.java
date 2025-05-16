@@ -26,6 +26,7 @@ public enum ErrorCode {
     CANCELLED_BOOKING_UPDATE("Cannot update a cancelled booking", HttpStatus.BAD_REQUEST),
     INVALID_BOOKING_DATA("Invalid booking data", HttpStatus.BAD_REQUEST),
     ROOM_NOT_AVAILABLE("Room not available for the selected dates", HttpStatus.BAD_REQUEST),
+    INVALID_DATE_RANGE("Invalid date range provided", HttpStatus.BAD_REQUEST),
     
     // Payment related error codes
     PAYMENT_NOT_FOUND("Payment not found", HttpStatus.NOT_FOUND),
