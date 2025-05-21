@@ -1,14 +1,28 @@
 package project.hotel_booking_system.model;
 
 
-import jakarta.persistence.*;
-import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import project.hotel_booking_system.enums.PaymentMethod;
 import project.hotel_booking_system.enums.PaymentStatus;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Builder
@@ -41,5 +55,9 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     PaymentStatus status;
+
+    @Column(name = "retry_count", nullable = false)
+    @Builder.Default
+    Integer retryCount = 0;
 
 }

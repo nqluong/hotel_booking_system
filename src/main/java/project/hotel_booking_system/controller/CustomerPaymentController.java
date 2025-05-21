@@ -2,7 +2,6 @@ package project.hotel_booking_system.controller;
 
 import java.time.LocalDateTime;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -21,12 +20,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import project.hotel_booking_system.dto.request.payment_request.PaymentRequestDTO;
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
-import project.hotel_booking_system.dto.response.PaymentResponseDTO;
 import project.hotel_booking_system.dto.response.PaginationResponse;
+import project.hotel_booking_system.dto.response.PaymentResponseDTO;
 import project.hotel_booking_system.service.PaymentService;
 
 @RestController
@@ -90,7 +90,58 @@ public class CustomerPaymentController {
                 .build();
     }
 
+    @Operation(
+        summary = "Process checkout payment",
+        description = "Process the remaining payment (70%) during check-out"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Checkout payment process initiated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid payment parameters",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "Booking not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
+    @PostMapping("/process-checkout-payment")
+    public ApiResponseDTO<PaymentResponseDTO> processCheckoutPayment(
+            @Parameter(
+                description = "Payment details for checkout including booking ID",
+                required = true,
+                schema = @Schema(implementation = PaymentRequestDTO.class)
+            )
+            @RequestBody PaymentRequestDTO paymentRequestDTO,
+            HttpServletRequest request) {
 
+        paymentRequestDTO.setAdvancePayment(false);
+        
+        String clientIp = getClientIp(request);
+        
+        return ApiResponseDTO.<PaymentResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .time(LocalDateTime.now())
+                .success(true)
+                .message("Checkout payment processing initiated successfully")
+                .result(paymentService.processVnPayPayment(paymentRequestDTO, clientIp))
+                .build();
+    }
 
     @Operation(
         summary = "Handle VNPAY payment callback",

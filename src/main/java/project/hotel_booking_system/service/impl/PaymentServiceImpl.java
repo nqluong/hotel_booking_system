@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -99,21 +100,42 @@ public class PaymentServiceImpl implements PaymentService {
         Booking booking = bookingRepository.findById(paymentRequestDTO.getBookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + paymentRequestDTO.getBookingId()));
 
-        BigDecimal amount;
+        // Check if payment already exists for this booking
+        Optional<Payment> existingPayment = paymentRepository.findByBookingId(paymentRequestDTO.getBookingId())
+                .stream()
+                .findFirst();
+
+        BigDecimal amount = null;
         if (paymentRequestDTO.isAdvancePayment()) {
             // 30% advance payment
             amount = booking.getTotalPrice().multiply(BigDecimal.valueOf(0.3));
-        } else {
-            // Remaining 70% payment
-            amount = booking.getTotalPrice().multiply(BigDecimal.valueOf(0.7));
+        }
+        else {
+            // Thanh toán khi trả phòng còn lại 70%
+            if (existingPayment.isPresent() && PaymentStatus.COMPLETED.equals(existingPayment.get().getStatus())) {
+                amount = booking.getTotalPrice().multiply(BigDecimal.valueOf(0.7));
+            }
         }
         
-        Payment payment = Payment.builder()
-                .booking(booking)
-                .amount(amount)
-                .paymentMethod(paymentRequestDTO.getPaymentMethod())
-                .status(PaymentStatus.PENDING)
-                .build();
+        Payment payment;
+        if (existingPayment.isPresent()) {
+            // Update payment record
+            payment = existingPayment.get();
+            payment.setAmount(amount);
+            payment.setPaymentMethod(paymentRequestDTO.getPaymentMethod());
+            payment.setStatus(PaymentStatus.PENDING);
+            log.info("Updating existing payment record for booking ID: {}", paymentRequestDTO.getBookingId());
+        } else {
+            // Create new payment record
+            payment = Payment.builder()
+                    .booking(booking)
+                    .amount(amount)
+                    .paymentMethod(paymentRequestDTO.getPaymentMethod())
+                    .status(PaymentStatus.PENDING)
+                    .retryCount(0)
+                    .build();
+            log.info("Creating new payment record for booking ID: {}", paymentRequestDTO.getBookingId());
+        }
         
         return mapToPaymentResponseDTO(paymentRepository.save(payment));
     }
@@ -134,38 +156,49 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponseDTO handleVnPayCallback(String vnPayResponse) {
-        // Parse VNPAY response
         Map<String, String> vnpParams = parseVnPayResponse(vnPayResponse);
         
-        // Get payment ID
-        Long paymentId = Long.parseLong(vnpParams.get("vnp_TxnRef"));
-        
-        // Get payment status
+        String vnpTxnRef = vnpParams.get("vnp_TxnRef");
         String vnpResponseCode = vnpParams.get("vnp_ResponseCode");
+        
+        // Handling unique transaction code cases
+        final Long paymentId = extractPaymentId(vnpTxnRef);
         
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + paymentId));
+        
+        Booking booking = payment.getBooking();
         
         // If payment is successful
         if ("00".equals(vnpResponseCode)) {
             payment.setStatus(PaymentStatus.COMPLETED);
             payment.setPaymentDate(LocalDateTime.now());
-
-            Booking booking = payment.getBooking();
             
-            // If it's an advance payment (30%), set booking to CONFIRMED
-            if (payment.getAmount().compareTo(booking.getTotalPrice()) < 0 && 
-                    BookingStatus.PENDING.equals(booking.getStatus())) {
-                booking.setStatus(BookingStatus.CONFIRMED);
-            } 
-            // If it's a payment during check-out (remaining 70%), set booking to COMPLETED
-            else if (BookingStatus.CHECKED_IN.equals(booking.getStatus())) {
+            // Check booking status and payment amount to determine payment type
+            if (BookingStatus.PENDING.equals(booking.getStatus())) {
+                    //30% down payment upon booking
+                if (payment.getAmount().compareTo(booking.getTotalPrice()) < 0) {
+                    booking.setStatus(BookingStatus.CONFIRMED);
+                } else {
+                    // 100% payment upfront
+                    booking.setStatus(BookingStatus.CONFIRMED);
+                }
+            } else if (BookingStatus.CHECKED_IN.equals(booking.getStatus())) {
+                // If it is payment upon check-out, update the booking status to COMPLETED
                 booking.setStatus(BookingStatus.COMPLETED);
             }
             
             bookingRepository.save(booking);
         } else {
             payment.setStatus(PaymentStatus.FAILED);
+            // Increase payment attempts
+            payment.setRetryCount(payment.getRetryCount() + 1);
+            log.warn("Payment failed for booking ID: {}, retry count: {}", 
+                    payment.getBooking().getId(), payment.getRetryCount());
+        }
+
+        if (vnpTxnRef.contains("_")) {
+            removeTransactionMapping(vnpTxnRef);
         }
         
         return mapToPaymentResponseDTO(paymentRepository.save(payment));
@@ -208,6 +241,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (clientIp == null || clientIp.isEmpty() || "0:0:0:0:0:0:0:1".equals(clientIp)) {
             clientIp = "127.0.0.1";
         }
+        
         String vnp_Version = vnPayConfig.getVersion();
         String vnp_Command = vnPayConfig.getCommand();
         String vnp_TmnCode = vnPayConfig.getTmnCode();
@@ -215,6 +249,9 @@ public class PaymentServiceImpl implements PaymentService {
         String vnp_Locale = vnPayConfig.getLocale();
         String vnp_OrderType = vnPayConfig.getOrderType();
 
+        // Generate unique crypto transaction for each payment
+        String uniqueTxnRef = paymentId + "_" + System.currentTimeMillis();
+        
         String vnp_Amount = String.valueOf(amount.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_HALF_UP).longValue());
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
@@ -224,7 +261,8 @@ public class PaymentServiceImpl implements PaymentService {
         vnp_Params.put("vnp_CurrCode", vnp_CurrCode);
         vnp_Params.put("vnp_OrderType", vnp_OrderType);
 
-        vnp_Params.put("vnp_TxnRef", String.valueOf(paymentId));
+        // Use unique cryto transaction reference
+        vnp_Params.put("vnp_TxnRef", uniqueTxnRef);
 
         vnp_Params.put("vnp_OrderInfo", "Payment for booking with ID: " + paymentId);
 
@@ -272,8 +310,21 @@ public class PaymentServiceImpl implements PaymentService {
 
         String vnp_SecureHash = hmacSHA512(vnPayConfig.getHashSecret(), hashData.toString());
         query.append("&vnp_SecureHash=").append(vnp_SecureHash);
-
-        return vnPayConfig.getPaymentUrl() + "?" + query;
+        
+        String fullUrl = vnPayConfig.getPaymentUrl() + "?" + query;
+        
+        // Save the relationship between uniqueTxnRef and payment ID for callback handling
+        updateTransactionMapping(uniqueTxnRef, paymentId);
+        
+        return fullUrl;
+    }
+    
+    // Map to temporarily store the relationship between the unique vnp_TxnRef and the payment ID
+    private static final Map<String, Long> transactionMap = new HashMap<>();
+    
+    private void updateTransactionMapping(String txnRef, Long paymentId) {
+        transactionMap.put(txnRef, paymentId);
+        log.info("Added transaction mapping: {} -> {}", txnRef, paymentId);
     }
     
     private String hmacSHA512(final String key, final String data) {
@@ -310,5 +361,45 @@ public class PaymentServiceImpl implements PaymentService {
         }
         
         return vnpParams;
+    }
+    
+    private Long getPaymentIdFromTransactionMap(String txnRef) {
+        Long paymentId = transactionMap.get(txnRef);
+        if (paymentId != null) {
+            log.info("Found payment ID {} for transaction reference {}", paymentId, txnRef);
+        }
+        return paymentId;
+    }
+    
+    private void removeTransactionMapping(String txnRef) {
+        if (transactionMap.containsKey(txnRef)) {
+            transactionMap.remove(txnRef);
+            log.info("Removed transaction mapping for: {}", txnRef);
+        }
+    }
+    
+    private Long extractPaymentId(String txnRef) {
+    
+        if (txnRef.contains("_")) {
+            Long paymentId = getPaymentIdFromTransactionMap(txnRef);
+            if (paymentId == null) {
+                try {
+                    paymentId = Long.parseLong(txnRef.split("_")[0]);
+                    log.warn("Transaction mapping not found, extracted payment ID from transaction reference: {}", paymentId);
+                    return paymentId;
+                } catch (Exception e) {
+                    log.error("Failed to parse payment ID from transaction reference: {}", txnRef, e);
+                    throw new ResourceNotFoundException("Invalid transaction reference: " + txnRef);
+                }
+            }
+            return paymentId;
+        } else {
+            try {
+                return Long.parseLong(txnRef);
+            } catch (NumberFormatException e) {
+                log.error("Failed to parse payment ID: {}", txnRef, e);
+                throw new ResourceNotFoundException("Invalid payment ID: " + txnRef);
+            }
+        }
     }
 } 

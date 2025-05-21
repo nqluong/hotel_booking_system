@@ -1,17 +1,16 @@
 package project.hotel_booking_system.dto.request.payment_request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 import project.hotel_booking_system.enums.PaymentMethod;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class PaymentRequestDTO {
-    private Long bookingId;
-    private PaymentMethod paymentMethod;
-    private boolean isAdvancePayment;
+     Long bookingId;
+     PaymentMethod paymentMethod;
+     boolean isAdvancePayment;
 } 
