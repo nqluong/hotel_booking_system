@@ -14,4 +14,15 @@ spring:
     show-sql: true
     properties:
       hibernate.format_sql: true
+vnpay:
+  version: "2.1.0"
+  command: "pay"
+  locale: "vn"
+  currCode: "VND"
+  orderType: "billpayment"
+  tmnCode: "${TMN_CODE}"
+  paymentUrl: "${PAY_URL}"
+  hashSecret: "${SECRET_KEY}"
+  returnUrl: "${RETURN_URL}"
+
 

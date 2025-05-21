@@ -26,4 +26,5 @@ public class PaymentResponseDTO {
     LocalDateTime paymentDate;
     PaymentMethod paymentMethod;
     PaymentStatus status;
+    String paymentUrl;
 } 

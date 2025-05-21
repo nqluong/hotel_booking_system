@@ -3,30 +3,40 @@ package project.hotel_booking_system.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import project.hotel_booking_system.dto.request.payment_request.PaymentRequestDTO;
 import project.hotel_booking_system.dto.request.payment_request.PaymentStatusUpdateDTO;
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.PaymentResponseDTO;
+import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.enums.PaymentStatus;
 import project.hotel_booking_system.service.PaymentService;
 
 @RestController
 @RequestMapping("/admin/payments")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Payment Management", description = "APIs for managing payments")
 public class PaymentController {
 
@@ -105,10 +115,10 @@ public class PaymentController {
                 .build();
     }
 
-    @PutMapping("/{id}/mark-as-paid")
-    @Operation(summary = "Mark payment as paid", description = "Update payment status to PAID")
+    @PutMapping("/{id}/mark-as-completed")
+    @Operation(summary = "Mark payment as completed", description = "Update payment status to COMPLETED")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully marked payment as paid"),
+        @ApiResponse(responseCode = "200", description = "Successfully marked payment as completed"),
         @ApiResponse(responseCode = "400", description = "Invalid status transition", 
                 content = @Content(schema = @Schema(implementation = ApiResponseDTO.class))),
         @ApiResponse(responseCode = "404", description = "Payment not found", 
@@ -116,14 +126,14 @@ public class PaymentController {
         @ApiResponse(responseCode = "500", description = "Internal server error", 
                 content = @Content(schema = @Schema(implementation = ApiResponseDTO.class)))
     })
-    public ApiResponseDTO<PaymentResponseDTO> markAsPaid(@PathVariable Long id) {
+    public ApiResponseDTO<PaymentResponseDTO> markAsCompleted(@PathVariable Long id) {
         PaymentStatusUpdateDTO statusUpdate = new PaymentStatusUpdateDTO();
-        statusUpdate.setStatus(PaymentStatus.PAID);
+        statusUpdate.setStatus(PaymentStatus.COMPLETED);
         
         return ApiResponseDTO.<PaymentResponseDTO>builder()
                 .status(HttpStatus.OK.value())
                 .time(LocalDateTime.now())
-                .message("Payment marked as paid successfully")
+                .message("Payment marked as completed successfully")
                 .result(paymentService.updatePaymentStatus(id, statusUpdate))
                 .build();
     }

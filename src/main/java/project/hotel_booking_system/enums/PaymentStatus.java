@@ -1,5 +1,9 @@
 package project.hotel_booking_system.enums;
 
 public enum PaymentStatus {
-    PENDING, PAID, COMPLETED, FAILED
+    PENDING,
+    COMPLETED,
+    FAILED,
+    REFUNDED,
+    CANCELLED
 }

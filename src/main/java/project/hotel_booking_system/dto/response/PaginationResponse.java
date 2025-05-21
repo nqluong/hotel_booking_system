@@ -1,21 +1,24 @@
 package project.hotel_booking_system.dto.response;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class PaginationResponse<T> {
-    List<T> content; // Danh sách kết quả
-    int currentPage; // Trang hiện tại
-    int totalPages; // Tổng số trang
-    long totalElements; // Tổng số phần tử
-    int pageSize; // Kích thước mỗi trang
-
+     List<T> content;
+     int page;
+     int pageSize;
+     long totalElements;
+     int totalPages;
+     boolean last;
 }
 

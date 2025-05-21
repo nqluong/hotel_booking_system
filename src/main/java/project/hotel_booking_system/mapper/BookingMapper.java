@@ -11,7 +11,6 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface BookingMapper {
 
-    
     @Mapping(source = "user.id", target = "userId")
     @Mapping(source = "user.fullname", target = "userName")
     @Mapping(source = "room.id", target = "roomId")

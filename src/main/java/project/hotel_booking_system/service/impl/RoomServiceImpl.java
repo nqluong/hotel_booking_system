@@ -72,10 +72,11 @@ public class RoomServiceImpl implements RoomService {
 
         return PaginationResponse.<RoomResponse>builder()
                 .content(roomResponses)
-                .currentPage(rooms.getNumber())
+                .page(rooms.getNumber())
                 .totalPages(rooms.getTotalPages())
                 .totalElements(rooms.getTotalElements())
                 .pageSize(rooms.getSize())
+                .last(rooms.isLast())
                 .build();
     }
 
@@ -190,10 +191,11 @@ public class RoomServiceImpl implements RoomService {
 
         return PaginationResponse.<RoomResponse>builder()
                 .content(roomResponses)
-                .currentPage(rooms.getNumber())
+                .page(rooms.getNumber())
                 .totalPages(rooms.getTotalPages())
                 .totalElements(rooms.getTotalElements())
                 .pageSize(rooms.getSize())
+                .last(rooms.isLast())
                 .build();
     }
 }

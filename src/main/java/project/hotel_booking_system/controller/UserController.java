@@ -97,7 +97,7 @@ public class UserController {
         
         PaginationResponse<UserResponse> paginationResponse = PaginationResponse.<UserResponse>builder()
                 .content(userPage.getContent())
-                .currentPage(userPage.getNumber())
+                .page(userPage.getNumber())
                 .totalElements(userPage.getTotalElements())
                 .totalPages(userPage.getTotalPages())
                 .build();

@@ -4,12 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import project.hotel_booking_system.enums.PaymentStatus;
+import project.hotel_booking_system.enums.PaymentMethod;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentStatusUpdateDTO {
-    private PaymentStatus status;
+public class PaymentRequestDTO {
+    private Long bookingId;
+    private PaymentMethod paymentMethod;
+    private boolean isAdvancePayment;
 } 
