@@ -45,7 +45,7 @@ public class Payment {
     @Column(name = "amount", nullable = false, precision = 10, scale = 2)
     BigDecimal amount;
 
-    @Column(name = "payment_date", updatable = false)
+    @Column(name = "payment_date")
     LocalDateTime paymentDate;
 
     @Enumerated(EnumType.STRING)

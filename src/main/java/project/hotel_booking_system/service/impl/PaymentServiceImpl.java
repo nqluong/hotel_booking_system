@@ -70,7 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponseDTO updatePaymentStatus(Long id, PaymentStatusUpdateDTO statusUpdateDTO) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + id));
-        
+
         payment.setStatus(statusUpdateDTO.getStatus());
         
         // If payment is completed, update booking status based on context
@@ -121,7 +121,8 @@ public class PaymentServiceImpl implements PaymentService {
         if (existingPayment.isPresent()) {
             // Update payment record
             payment = existingPayment.get();
-            payment.setAmount(amount);
+            BigDecimal existingAmount = payment.getAmount();
+            payment.setAmount(amount.add(existingAmount));
             payment.setPaymentMethod(paymentRequestDTO.getPaymentMethod());
             payment.setStatus(PaymentStatus.PENDING);
             log.info("Updating existing payment record for booking ID: {}", paymentRequestDTO.getBookingId());
@@ -172,7 +173,9 @@ public class PaymentServiceImpl implements PaymentService {
         // If payment is successful
         if ("00".equals(vnpResponseCode)) {
             payment.setStatus(PaymentStatus.COMPLETED);
-            payment.setPaymentDate(LocalDateTime.now());
+            if(payment.getPaymentDate() == null) {
+                payment.setPaymentDate(LocalDateTime.now());
+            }
             
             // Check booking status and payment amount to determine payment type
             if (BookingStatus.PENDING.equals(booking.getStatus())) {
