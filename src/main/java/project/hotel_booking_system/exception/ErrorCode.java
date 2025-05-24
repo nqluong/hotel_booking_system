@@ -27,12 +27,17 @@ public enum ErrorCode {
     INVALID_BOOKING_DATA("Invalid booking data", HttpStatus.BAD_REQUEST),
     ROOM_NOT_AVAILABLE("Room not available for the selected dates", HttpStatus.BAD_REQUEST),
     INVALID_DATE_RANGE("Invalid date range provided", HttpStatus.BAD_REQUEST),
+    EARLY_CHECK_IN("Cannot check-in before the reserved check-in date", HttpStatus.BAD_REQUEST),
+    INVALID_CHECK_OUT("Cannot check-out before check-in date", HttpStatus.BAD_REQUEST),
     
     // Payment related error codes
     PAYMENT_NOT_FOUND("Payment not found", HttpStatus.NOT_FOUND),
     INVALID_PAYMENT_STATUS_TRANSITION("Invalid payment status transition", HttpStatus.BAD_REQUEST),
     PAYMENT_ALREADY_PROCESSED("Payment has already been processed", HttpStatus.BAD_REQUEST),
-    INVALID_PAYMENT_AMOUNT("Invalid payment amount", HttpStatus.BAD_REQUEST)
+    INVALID_PAYMENT_AMOUNT("Invalid payment amount", HttpStatus.BAD_REQUEST),
+    PAYMENT_REQUIRED("Payment is required to complete this operation", HttpStatus.BAD_REQUEST),
+    INCOMPLETE_PAYMENT("Full payment is required to complete checkout", HttpStatus.BAD_REQUEST),
+    CASH_PAYMENT_REQUIRED("Cash payment confirmation is required", HttpStatus.BAD_REQUEST)
     ;
     private String message;
     private HttpStatusCode httpStatusCode;
@@ -41,6 +46,5 @@ public enum ErrorCode {
         this.message = message;
         this.httpStatusCode = httpStatusCode;
     }
-
 
 }

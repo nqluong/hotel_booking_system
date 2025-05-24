@@ -21,12 +21,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import project.hotel_booking_system.dto.request.payment_request.CashPaymentRequestDTO;
 import project.hotel_booking_system.dto.request.payment_request.PaymentRequestDTO;
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.dto.response.PaymentResponseDTO;
+import project.hotel_booking_system.service.CashPaymentService;
 import project.hotel_booking_system.service.PaymentService;
 
 @RestController
@@ -37,6 +40,7 @@ import project.hotel_booking_system.service.PaymentService;
 public class CustomerPaymentController {
 
     private final PaymentService paymentService;
+    private final CashPaymentService cashPaymentService;
 
     @Operation(
         summary = "Process payment with VNPAY",
@@ -277,6 +281,81 @@ public class CustomerPaymentController {
                 .success(true)
                 .message("Booking payments retrieved successfully")
                 .result(paymentService.getBookingPayments(bookingId, pageable))
+                .build();
+    }
+
+    @Operation(
+        summary = "Process cash payment",
+        description = "Process a cash payment for a booking"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Successfully processed cash payment",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid payment data",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "Booking not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
+    @PostMapping("/cash")
+    public ApiResponseDTO<PaymentResponseDTO> processCashPayment(
+            @Valid @RequestBody CashPaymentRequestDTO cashPaymentRequestDTO) {
+        return ApiResponseDTO.<PaymentResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .time(LocalDateTime.now())
+                .message("Cash payment processed successfully")
+                .result(cashPaymentService.processCashPayment(cashPaymentRequestDTO))
+                .build();
+    }
+    
+    @Operation(
+        summary = "Get remaining payment amount",
+        description = "Get the remaining amount to be paid for a booking"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Successfully retrieved remaining amount",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "Booking not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
+    @GetMapping("/cash/remaining/{bookingId}")
+    public ApiResponseDTO<Double> getRemainingPaymentAmount(
+            @Parameter(description = "Booking ID", required = true)
+            @PathVariable Long bookingId) {
+        return ApiResponseDTO.<Double>builder()
+                .status(HttpStatus.OK.value())
+                .time(LocalDateTime.now())
+                .message("Remaining payment amount retrieved successfully")
+                .result(cashPaymentService.getRemainingPaymentAmount(bookingId))
                 .build();
     }
 

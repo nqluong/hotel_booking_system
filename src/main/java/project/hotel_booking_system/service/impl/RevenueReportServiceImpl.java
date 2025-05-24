@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
 import jakarta.persistence.EntityManager;
@@ -21,6 +23,7 @@ import project.hotel_booking_system.service.RevenueReportService;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RevenueReportServiceImpl implements RevenueReportService {
 
     private final EntityManager entityManager;
@@ -101,7 +104,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             log.info("Parameters: startDate={}, endDate={}, paymentStatus={}, bookingStatus={}", 
                     startDate, endDate, PaymentStatus.COMPLETED, BookingStatus.COMPLETED);
             
-            // Thêm timeout để tránh treo quá lâu với các truy vấn phức tạp
+
             query.setHint("javax.persistence.query.timeout", 30000);
             
             List<Object[]> results = query.getResultList();
@@ -111,7 +114,6 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             
             for (Object[] result : results) {
                 try {
-                    // Xử lý kết quả an toàn hơn để tránh lỗi cast
                     LocalDate date = null;
                     if (result[0] instanceof java.sql.Date) {
                         date = ((java.sql.Date) result[0]).toLocalDate();
@@ -119,7 +121,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                         date = LocalDate.parse((String) result[0]);
                     } else {
                         log.warn("Unexpected date type: {}", result[0] != null ? result[0].getClass().getName() : "null");
-                        continue; // bỏ qua bản ghi không hợp lệ
+                        continue;
                     }
                     
                     BigDecimal totalRevenue;

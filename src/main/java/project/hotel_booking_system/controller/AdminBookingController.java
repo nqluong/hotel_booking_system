@@ -22,7 +22,10 @@ import project.hotel_booking_system.dto.request.booking_request.BookingStatusUpd
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.BookingResponseDTO;
 import project.hotel_booking_system.enums.BookingStatus;
+import project.hotel_booking_system.exception.AppException;
+import project.hotel_booking_system.exception.ErrorCode;
 import project.hotel_booking_system.service.AdminBookingService;
+import project.hotel_booking_system.service.CashPaymentService;
 
 @RestController
 @RequestMapping("/admin/bookings")
@@ -31,6 +34,7 @@ import project.hotel_booking_system.service.AdminBookingService;
 public class AdminBookingController {
 
     private final AdminBookingService adminBookingService;
+    private final CashPaymentService cashPaymentService;
 
     @GetMapping
     @Operation(summary = "Get all bookings", description = "Retrieve a list of all bookings in the system")
@@ -155,7 +159,7 @@ public class AdminBookingController {
     @Operation(summary = "Check-out guest", description = "Update a booking status to COMPLETED")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully checked out the guest"),
-        @ApiResponse(responseCode = "400", description = "Invalid status transition", 
+        @ApiResponse(responseCode = "400", description = "Invalid status transition or incomplete payment", 
                 content = @Content(schema = @Schema(implementation = ApiResponseDTO.class))),
         @ApiResponse(responseCode = "404", description = "Booking not found", 
                 content = @Content(schema = @Schema(implementation = ApiResponseDTO.class))),
@@ -163,15 +167,39 @@ public class AdminBookingController {
                 content = @Content(schema = @Schema(implementation = ApiResponseDTO.class)))
     })
     public ApiResponseDTO<BookingResponseDTO> checkOutBooking(@PathVariable Long id) {
-        BookingStatusUpdateDTO statusUpdate = new BookingStatusUpdateDTO();
-        statusUpdate.setStatus(BookingStatus.COMPLETED);
-        
-        return ApiResponseDTO.<BookingResponseDTO>builder()
-                .status(HttpStatus.OK.value())
-                .time(LocalDateTime.now())
-                .message("Guest checked out successfully")
-                .result(adminBookingService.updateBookingStatus(id, statusUpdate))
-                .build();
+        try {
+            // Check if there's any remaining payment
+            double remainingAmount = cashPaymentService.getRemainingPaymentAmount(id);
+            
+            if (remainingAmount > 0) {
+                return ApiResponseDTO.<BookingResponseDTO>builder()
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .time(LocalDateTime.now())
+                        .message("Cannot complete checkout. Remaining payment amount: " + remainingAmount)
+                        .success(false)
+                        .build();
+            }
+            
+            BookingStatusUpdateDTO statusUpdate = new BookingStatusUpdateDTO();
+            statusUpdate.setStatus(BookingStatus.COMPLETED);
+            
+            return ApiResponseDTO.<BookingResponseDTO>builder()
+                    .status(HttpStatus.OK.value())
+                    .time(LocalDateTime.now())
+                    .message("Guest checked out successfully")
+                    .result(adminBookingService.updateBookingStatus(id, statusUpdate))
+                    .build();
+        } catch (AppException ex) {
+            if (ex.getErrorCode() == ErrorCode.INCOMPLETE_PAYMENT) {
+                return ApiResponseDTO.<BookingResponseDTO>builder()
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .time(LocalDateTime.now())
+                        .message("Cannot complete checkout. Payment is incomplete.")
+                        .success(false)
+                        .build();
+            }
+            throw ex;
+        }
     }
 
     @PutMapping("/{id}/cancel")

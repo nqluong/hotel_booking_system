@@ -7,6 +7,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,12 +36,13 @@ import project.hotel_booking_system.service.BookingService;
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class BookingServiceImpl implements BookingService {
 
-    private final BookingRepository bookingRepository;
-    private final RoomRepository roomRepository;
-    private final UserRepository userRepository;
-    private final BookingMapper bookingMapper;
+    BookingRepository bookingRepository;
+    RoomRepository roomRepository;
+    UserRepository userRepository;
+    BookingMapper bookingMapper;
 
     @Override
     public BookingResponseDTO createBooking(BookingCreationRequest request) {
