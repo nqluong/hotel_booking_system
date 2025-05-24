@@ -37,6 +37,5 @@ public class UserCreateRequest {
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "^[0-9]{10,15}$", message = "Phone number must be between 10 and 15 digits")
     String phone;
-    
-    Role role;
+
 } 

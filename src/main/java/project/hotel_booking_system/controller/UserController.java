@@ -18,6 +18,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,13 +40,45 @@ import project.hotel_booking_system.service.UserService;
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/users")
+@Tag(name = "User Management", description = "APIs for managing users in the hotel booking system")
 public class UserController {
 
     private final UserService userService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponseDTO<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
+    @Operation(
+        summary = "Register a new user",
+        description = "Create a new user account. All new users are automatically assigned the CUSTOMER role."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201", 
+            description = "User registered successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid user data provided",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "409", 
+            description = "Username or email already exists",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
+    public ApiResponseDTO<UserResponse> createUser(
+            @Valid @RequestBody UserCreateRequest request) {
         log.info("Creating new user");
         UserResponse userResponse = userService.createUser(request);
         return ApiResponseDTO.<UserResponse>builder()
@@ -52,7 +91,38 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @Operation(
+        summary = "Update user information",
+        description = "Update an existing user's profile information"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "User information updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid user data provided",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "User not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
     public ApiResponseDTO<UserResponse> updateUser(
+            @Parameter(description = "User ID", required = true)
             @PathVariable Long id,
             @Valid @RequestBody UserUpdateRequest request) {
         log.info("Updating user with ID: {}", id);
@@ -67,7 +137,31 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponseDTO<UserResponse> getUserById(@PathVariable Long id) {
+    @Operation(
+        summary = "Get user by ID",
+        description = "Retrieve user details by their unique ID"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "User found successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "User not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
+    public ApiResponseDTO<UserResponse> getUserById(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long id) {
         log.info("Getting user with ID: {}", id);
         UserResponse userResponse = userService.getUserById(id);
         return ApiResponseDTO.<UserResponse>builder()
@@ -80,10 +174,31 @@ public class UserController {
     }
 
     @GetMapping
+    @Operation(
+        summary = "Get all users",
+        description = "Retrieve a paginated list of all users"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Users retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
     public ApiResponseDTO<PaginationResponse<UserResponse>> getAllUsers(
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(defaultValue = "10") int size,
+            
+            @Parameter(description = "Field to sort by", example = "id")
             @RequestParam(defaultValue = "id") String sortBy,
+            
+            @Parameter(description = "Sort direction (asc or desc)", example = "asc")
             @RequestParam(defaultValue = "asc") String direction) {
         
         log.info("Getting all users with page: {}, size: {}", page, size);
@@ -112,7 +227,31 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponseDTO<Void> deleteUser(@PathVariable Long id) {
+    @Operation(
+        summary = "Delete user",
+        description = "Soft delete a user account (deactivate rather than remove from database)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "User deleted successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "User not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
+    public ApiResponseDTO<Void> deleteUser(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long id) {
         log.info("Soft deleting user with ID: {}", id);
         userService.deleteUser(id);
         return ApiResponseDTO.<Void>builder()
@@ -125,8 +264,49 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/role")
+    @Operation(
+        summary = "Update user role",
+        description = "Change a user's role (e.g., from CUSTOMER to ADMIN). This endpoint is restricted to administrators."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "User role updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid role provided",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403", 
+            description = "Unauthorized, insufficient permissions",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "User not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponseDTO.class)
+            )
+        )
+    })
     public ApiResponseDTO<UserResponse> updateUserRole(
+            @Parameter(description = "User ID", required = true)
             @PathVariable Long id,
+            
+            @Parameter(description = "New role to assign", required = true, example = "ADMIN")
             @RequestParam Role role) {
         log.info("Updating role to {} for user with ID: {}", role, id);
         UserResponse userResponse = userService.updateUserRole(id, role);

@@ -1,7 +1,8 @@
 package project.hotel_booking_system.service.impl;
 
-import jakarta.persistence.EntityNotFoundException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,8 @@ import project.hotel_booking_system.dto.request.UserCreateRequest;
 import project.hotel_booking_system.dto.request.UserUpdateRequest;
 import project.hotel_booking_system.dto.response.UserResponse;
 import project.hotel_booking_system.enums.Role;
+import project.hotel_booking_system.exception.ResourceAlreadyExistsException;
+import project.hotel_booking_system.exception.ResourceNotFoundException;
 import project.hotel_booking_system.mapper.UserMapper;
 import project.hotel_booking_system.model.User;
 import project.hotel_booking_system.repository.UserRepository;
@@ -22,25 +25,26 @@ import java.time.LocalDateTime;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final UserMapper userMapper;
+    UserRepository userRepository;
+    PasswordEncoder passwordEncoder;
+    UserMapper userMapper;
 
     @Override
     @Transactional
     public UserResponse createUser(UserCreateRequest request) {
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .fullname(request.getFullname())
-                .phone(request.getPhone())
-                .role(request.getRole() != null ? request.getRole() : Role.CUSTOMER)
-                .createAt(LocalDateTime.now())
-                .isActive(true)
-                .build();
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new ResourceAlreadyExistsException("User", "username", request.getUsername());
+        }
+        
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ResourceAlreadyExistsException("User", "email", request.getEmail());
+        }
+        
+        User user = userMapper.toUser(request);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         
         User savedUser = userRepository.save(user);
         log.info("User created with ID: {}", savedUser.getId());
@@ -113,6 +117,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public User findUserEntityById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
     }
 } 

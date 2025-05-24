@@ -148,4 +148,31 @@ public class GlobalExceptionHandler {
                 .result(errors)
                 .build();
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public ApiResponseDTO<Object> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return ApiResponseDTO.builder()
+                .status(HttpStatus.NOT_FOUND.value())
+                .time(LocalDateTime.now())
+                .success(false)
+                .message(ex.getMessage())
+                .result(null)
+                .build();
+    }
+
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseBody
+    public ApiResponseDTO<Object> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex) {
+        log.error("Resource already exists: {}", ex.getMessage());
+        return ApiResponseDTO.builder()
+                .status(HttpStatus.CONFLICT.value())
+                .time(LocalDateTime.now())
+                .success(false)
+                .message(ex.getMessage())
+                .result(null)
+                .build();
+    }
 }
