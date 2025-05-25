@@ -25,6 +25,18 @@ import project.hotel_booking_system.dto.response.ApiResponseDTO;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(value = RuntimeException.class)
+    public ApiResponseDTO<Object> handlingRuntimeException(RuntimeException ex) {
+        log.error("An error occurred: {}", ex.getMessage(), ex);
+        return ApiResponseDTO.builder()
+                .status(ErrorCode.UNCATEGORIZED_EXCEPTION.getHttpStatusCode().value())
+                .time(LocalDateTime.now())
+                .success(false)
+                .message(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage())
+                .result(null)
+                .build();
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiResponseDTO<Object> handleEntityNotFoundException(EntityNotFoundException ex) {
