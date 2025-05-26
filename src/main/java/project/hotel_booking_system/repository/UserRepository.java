@@ -19,19 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.isActive = true AND (u.username = :identifier OR u.email = :identifier)")
     Optional<User> findByUsernameOrEmailAndIsActiveTrue(@Param("identifier") String identifier);
     
-    /**
-     * Kiểm tra xem username đã tồn tại chưa
-     * 
-     * @param username Tên đăng nhập cần kiểm tra
-     * @return true nếu username đã tồn tại, false nếu chưa
-     */
+    Optional<User> findByUsername(String username);
+
     boolean existsByUsername(String username);
     
-    /**
-     * Kiểm tra xem email đã tồn tại chưa
-     * 
-     * @param email Địa chỉ email cần kiểm tra
-     * @return true nếu email đã tồn tại, false nếu chưa
-     */
     boolean existsByEmail(String email);
 }

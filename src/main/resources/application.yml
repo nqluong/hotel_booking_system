@@ -24,5 +24,9 @@ vnpay:
   paymentUrl: "${PAY_URL}"
   hashSecret: "${SECRET_KEY}"
   returnUrl: "${RETURN_URL}"
+jwt:
+  signer-key: "${SIGNER_KEY}"
+  valid-duration: 3600 # in seconds
+  refreshable-duration: 36000 # in seconds
 
 

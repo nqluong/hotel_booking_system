@@ -5,13 +5,10 @@ import project.hotel_booking_system.dto.response.PaymentResponseDTO;
 
 public interface CashPaymentService {
     
-    /**
-     * Process a cash payment for a booking
-     */
+
+    //Process a cash payment for a booking
     PaymentResponseDTO processCashPayment(CashPaymentRequestDTO cashPaymentRequestDTO);
-    
-    /**
-     * Get the remaining amount to be paid for a booking
-     */
+
+    //Get the remaining amount to be paid for a booking
     double getRemainingPaymentAmount(Long bookingId);
 } 

@@ -2,8 +2,8 @@ package project.hotel_booking_system.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import project.hotel_booking_system.dto.request.UserCreateRequest;
-import project.hotel_booking_system.dto.request.UserUpdateRequest;
+import project.hotel_booking_system.dto.request.user_request.UserCreateRequest;
+import project.hotel_booking_system.dto.request.user_request.UserUpdateRequest;
 import project.hotel_booking_system.dto.response.UserResponse;
 import project.hotel_booking_system.enums.Role;
 import project.hotel_booking_system.model.User;

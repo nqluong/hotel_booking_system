@@ -9,8 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import project.hotel_booking_system.dto.request.UserCreateRequest;
-import project.hotel_booking_system.dto.request.UserUpdateRequest;
+import project.hotel_booking_system.dto.request.user_request.UserCreateRequest;
+import project.hotel_booking_system.dto.request.user_request.UserUpdateRequest;
 import project.hotel_booking_system.dto.response.UserResponse;
 import project.hotel_booking_system.enums.Role;
 import project.hotel_booking_system.exception.ResourceAlreadyExistsException;
@@ -19,8 +19,6 @@ import project.hotel_booking_system.mapper.UserMapper;
 import project.hotel_booking_system.model.User;
 import project.hotel_booking_system.repository.UserRepository;
 import project.hotel_booking_system.service.UserService;
-
-import java.time.LocalDateTime;
 
 @Service
 @Slf4j
