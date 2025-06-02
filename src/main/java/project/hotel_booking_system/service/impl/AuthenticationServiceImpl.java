@@ -28,6 +28,7 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import project.hotel_booking_system.dto.request.authentication_request.AuthenticationRequest;
 import project.hotel_booking_system.dto.request.authentication_request.IntrospectRequest;
+import project.hotel_booking_system.dto.request.authentication_request.LogoutRequest;
 import project.hotel_booking_system.dto.response.AuthenticationResponse;
 import project.hotel_booking_system.dto.response.IntrospectResponse;
 import project.hotel_booking_system.exception.AppException;
@@ -71,7 +72,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         return IntrospectResponse.builder()
-                .vaild(isValid)
+                .valid(isValid)
                 .build();
     }
 
@@ -81,8 +82,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public AuthenticationResponse logout(String accessToken) {
-        return null;
+    public void logout(LogoutRequest request)  {
+        try{
+            var signedJWT = verifyToken(request.getToken(), true);
+            String jit = signedJWT.getJWTClaimsSet().getJWTID();
+            Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                    .token(jit)
+                    .invalidatedAt(expiryTime)
+                    .build();
+            invalidatedTokenRepository.save(invalidatedToken);
+        }catch(AppException | ParseException | JOSEException e){
+            log.error("Error while logging out: {}", e.getMessage());
+        }
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
@@ -118,7 +131,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                             Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()
                     ))
                     .claim("userId", user.getId())
-                    .claim("role", user.getRole())
+                    .claim("role", "ROLE_"+user.getRole().name().toUpperCase())
                     .build();
 
             Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -165,5 +178,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .invalidatedAt(new Date())
                 .build();
         invalidatedTokenRepository.save(invalidatedToken);
+    }
+
+    private StringBuilder buildScope(User user) {
+        StringBuilder scope = new StringBuilder();
+        if (user.getRole() != null) {
+            scope.append("ROLE_");
+            scope.append(user.getRole().name().toLowerCase());
+        }
+        return scope;
     }
 }

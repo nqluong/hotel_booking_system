@@ -1,9 +1,12 @@
 package project.hotel_booking_system.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,7 +17,15 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    
+
+
+    private final String[] PUBLIC_ENDPOINTS = {
+            "/users", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh"
+    };
+
+    @Autowired
+    private CustomerJwtDecoder custọmJwtDecoder;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
@@ -30,22 +41,21 @@ public class SecurityConfig {
         firewall.setAllowUrlEncodedPeriod(true);
         return firewall;
     }
-    
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/**").permitAll()
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            // Tắt cơ chế chuyển hướng mặc định
-            .exceptionHandling(exceptions -> exceptions
-                .disable()
-            );
-        
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(request-> request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
+                .permitAll()
+                .anyRequest()
+                .authenticated());
+
+        http.oauth2ResourceServer(oauth2
+                -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(custọmJwtDecoder)
+
+                ));
+
+        http.csrf(AbstractHttpConfigurer::disable);
         return http.build();
+
     }
 } 
