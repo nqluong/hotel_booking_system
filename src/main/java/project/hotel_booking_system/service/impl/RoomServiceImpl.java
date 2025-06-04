@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import lombok.AccessLevel;
@@ -56,6 +57,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public PaginationResponse<RoomResponse> getAllRoom(Pageable pageable) {
         Page<Room> rooms = roomRepository.findAll(pageable);
 

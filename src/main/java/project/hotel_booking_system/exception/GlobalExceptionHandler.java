@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -184,6 +185,20 @@ public class GlobalExceptionHandler {
                 .time(LocalDateTime.now())
                 .success(false)
                 .message(ex.getMessage())
+                .result(null)
+                .build();
+    }
+
+    @ExceptionHandler(JwtException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ResponseBody
+    public ApiResponseDTO<Object> handleJwtException(JwtException ex) {
+        log.error("JWT error: {}", ex.getMessage());
+        return ApiResponseDTO.builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .time(LocalDateTime.now())
+                .success(false)
+                .message("Invalid JWT token")
                 .result(null)
                 .build();
     }

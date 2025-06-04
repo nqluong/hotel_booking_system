@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import project.hotel_booking_system.dto.request.authentication_request.AuthenticationRequest;
 import project.hotel_booking_system.dto.request.authentication_request.IntrospectRequest;
 import project.hotel_booking_system.dto.request.authentication_request.LogoutRequest;
+import project.hotel_booking_system.dto.request.authentication_request.RefreshRequest;
 import project.hotel_booking_system.dto.response.AuthenticationResponse;
 import project.hotel_booking_system.dto.response.IntrospectResponse;
 import project.hotel_booking_system.exception.AppException;
@@ -77,8 +79,32 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public AuthenticationResponse refreshToken(String refreshToken) {
-        return null;
+    public AuthenticationResponse refreshToken(RefreshRequest request) {
+        try {
+            var signedJWT = verifyToken(request.getToken(), true);
+
+            var jwt = signedJWT.getJWTClaimsSet().getJWTID();
+            var expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                    .token(jwt)
+                    .invalidatedAt(expiryTime)
+                    .build();
+
+            invalidatedTokenRepository.save(invalidatedToken);
+
+            var userName = signedJWT.getJWTClaimsSet().getSubject();
+            var user = userRepository.findByUsername(userName)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+            var token = generateToken(user);
+            return AuthenticationResponse.builder()
+                    .token(token)
+                    .authenticated(true)
+                    .build();
+        }catch (ParseException | JOSEException e) {
+            log.error("Error while refreshing token: {}", e.getMessage());
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
     }
 
     @Override
@@ -130,6 +156,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .expirationTime(new Date(
                             Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()
                     ))
+                    .jwtID(UUID.randomUUID().toString())
                     .claim("userId", user.getId())
                     .claim("role", "ROLE_"+user.getRole().name().toUpperCase())
                     .build();
