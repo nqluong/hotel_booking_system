@@ -198,7 +198,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .time(LocalDateTime.now())
                 .success(false)
-                .message("Invalid JWT token")
+                .message(ex.getMessage())
                 .result(null)
                 .build();
     }

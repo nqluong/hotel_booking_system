@@ -43,7 +43,8 @@ public enum ErrorCode {
     USER_NOT_EXISTED("User does not exist", HttpStatus.BAD_REQUEST),
     USER_EXISTED("User already exists", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED("Unauthenticated", HttpStatus.UNAUTHORIZED),
-    ;
+    ACCESS_DENIED("",HttpStatus.FORBIDDEN ),
+    CANNOT_CANCEL_BOOKING("",HttpStatus.BAD_REQUEST );
     private String message;
     private HttpStatusCode httpStatusCode;
 

@@ -1,177 +1,141 @@
 package project.hotel_booking_system.service.impl;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
-import lombok.extern.slf4j.Slf4j;
-import lombok.experimental.FieldDefaults;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
 import project.hotel_booking_system.dto.request.booking_request.BookingStatusUpdateDTO;
 import project.hotel_booking_system.dto.response.BookingResponseDTO;
 import project.hotel_booking_system.enums.BookingStatus;
-import project.hotel_booking_system.enums.PaymentStatus;
+import project.hotel_booking_system.enums.RoomStatus;
 import project.hotel_booking_system.exception.AppException;
 import project.hotel_booking_system.exception.ErrorCode;
 import project.hotel_booking_system.mapper.BookingMapper;
 import project.hotel_booking_system.model.Booking;
-import project.hotel_booking_system.model.Payment;
+import project.hotel_booking_system.model.Room;
 import project.hotel_booking_system.repository.BookingRepository;
 import project.hotel_booking_system.repository.PaymentRepository;
+import project.hotel_booking_system.repository.RoomRepository;
 import project.hotel_booking_system.service.AdminBookingService;
+import project.hotel_booking_system.service.BookingCoreService;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AdminBookingServiceImpl implements AdminBookingService {
 
+    BookingCoreService bookingCoreService;
     BookingRepository bookingRepository;
+    RoomRepository roomRepository;
     BookingMapper bookingMapper;
     PaymentRepository paymentRepository;
 
-    LocalTime STANDARD_CHECK_IN_TIME = LocalTime.of(14, 0);
-
-    LocalTime STANDARD_CHECK_OUT_TIME = LocalTime.of(12, 0);
-
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public List<BookingResponseDTO> getAllBookings() {
         List<Booking> bookings = bookingRepository.findAll();
-
         return bookings.stream()
                 .map(bookingMapper::toDTO)
                 .toList();
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public BookingResponseDTO getBookingById(Long id) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        return bookingMapper.toDTO(booking);
+        return bookingCoreService.getBookingById(id);
     }
 
     @Override
-    public BookingResponseDTO updateBookingStatus(Long id, BookingStatusUpdateDTO statusUpdateDTO) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-
-        validateStatusTransition(booking, statusUpdateDTO.getStatus());
-
-        booking.setStatus(statusUpdateDTO.getStatus());
-        Booking updatedBooking = bookingRepository.save(booking);
-        
-        return bookingMapper.toDTO(updatedBooking);
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<BookingResponseDTO> getUserBookings(Long userId) {
+        List<Booking> bookings = bookingRepository.findByUser_Id(userId, Pageable.unpaged()).getContent();
+        return bookings.stream()
+                .map(bookingMapper::toDTO)
+                .toList();
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public List<BookingResponseDTO> getBookingsByStatus(BookingStatus status) {
         List<Booking> bookings = bookingRepository.findByStatus(status);
         return bookings.stream()
                 .map(bookingMapper::toDTO)
                 .toList();
     }
-    
-    private void validateStatusTransition(Booking booking, BookingStatus newStatus) {
-        BookingStatus currentStatus = booking.getStatus();
-        
-        switch (currentStatus) {
-            case PENDING:
-                if (newStatus != BookingStatus.CONFIRMED && newStatus != BookingStatus.CANCELLED) {
-                    throw new AppException(ErrorCode.INVALID_BOOKING_STATUS_TRANSITION);
-                }
-                break;
-            case CONFIRMED:
-                if (newStatus != BookingStatus.CHECKED_IN && newStatus != BookingStatus.CANCELLED) {
-                    throw new AppException(ErrorCode.INVALID_BOOKING_STATUS_TRANSITION);
-                }
-                if (newStatus == BookingStatus.CHECKED_IN) {
-                    validateCheckInTime(booking);
-                }
-                break;
-            case CHECKED_IN:
-                if (newStatus != BookingStatus.COMPLETED) {
-                    throw new AppException(ErrorCode.INVALID_BOOKING_STATUS_TRANSITION);
-                }
-                
-                // Check if full payment has been made before allowing COMPLETED status
-                validateFullPayment(booking);
-                
-                // Validate check-out time
-                validateCheckOutTime(booking);
-                break;
-            case COMPLETED:
-                throw new AppException(ErrorCode.COMPLETED_BOOKING_UPDATE);
-            case CANCELLED:
-                throw new AppException(ErrorCode.CANCELLED_BOOKING_UPDATE);
-            default:
-                throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public BookingResponseDTO updateBookingStatus(Long id, BookingStatusUpdateDTO statusUpdate) {
+        Booking booking = bookingCoreService.findBookingById(id);
+
+        bookingCoreService.validateStatusTransition(booking, statusUpdate.getStatus());
+
+        booking.setStatus(statusUpdate.getStatus());
+        Booking updated = bookingRepository.save(booking);
+
+        return bookingMapper.toDTO(updated);
     }
-    
-    private void validateCheckInTime(Booking booking) {
-        LocalDate checkInDate = convertToLocalDate(booking.getCheckInDate());
-        LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
 
-        if (today.isBefore(checkInDate)) {
-            throw new AppException(ErrorCode.EARLY_CHECK_IN);
-        }
-
-        if (today.isEqual(checkInDate) && now.isBefore(STANDARD_CHECK_IN_TIME)) {
-            log.warn("Early check-in detected for booking ID: {}. Standard check-in time is {}",
-                    booking.getId(), STANDARD_CHECK_IN_TIME);
-        }
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public BookingResponseDTO confirmBooking(Long id) {
+        BookingStatusUpdateDTO statusUpdate = new BookingStatusUpdateDTO();
+        statusUpdate.setStatus(BookingStatus.CONFIRMED);
+        return updateBookingStatus(id, statusUpdate);
     }
-    
-    private void validateCheckOutTime(Booking booking) {
-        LocalDate checkOutDate = convertToLocalDate(booking.getCheckOutDate());
-        LocalDate checkInDate = convertToLocalDate(booking.getCheckInDate());
-        LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
 
-        if (today.isBefore(checkInDate)) {
-            throw new AppException(ErrorCode.INVALID_CHECK_OUT);
-        }
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public BookingResponseDTO checkInBooking(Long id) {
+        Booking booking =  bookingCoreService.findBookingById(id);
+        bookingCoreService.validateCheckInTime(booking);
 
-        if (today.isAfter(checkOutDate)) {
-            log.warn("Late check-out detected for booking ID: {}. Additional charges may apply.",
-                    booking.getId());
-        }
-
-        if (today.isEqual(checkOutDate) && now.isAfter(STANDARD_CHECK_OUT_TIME)) {
-            log.warn("Late check-out time for booking ID: {}. Standard check-out time is {}. Additional charges may apply.",
-                    booking.getId(), STANDARD_CHECK_OUT_TIME);
-        }
+        BookingStatusUpdateDTO statusUpdate = new BookingStatusUpdateDTO();
+        statusUpdate.setStatus(BookingStatus.CHECKED_IN);
+        return updateBookingStatus(id, statusUpdate);
     }
-    
-    private LocalDate convertToLocalDate(Date date) {
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public BookingResponseDTO checkOutBooking(Long id) {
+        Booking booking = bookingCoreService.findBookingById(id);
+
+        bookingCoreService.validateFullPayment(booking);
+        bookingCoreService.validateCheckOutTime(booking);
+
+        Room room = booking.getRoom();
+        room.setRoomStatus(RoomStatus.AVAILABLE);
+        roomRepository.save(room);
+
+        BookingStatusUpdateDTO statusUpdate = new BookingStatusUpdateDTO();
+        statusUpdate.setStatus(BookingStatus.COMPLETED);
+        return updateBookingStatus(id, statusUpdate);
     }
-    
-    private void validateFullPayment(Booking booking) {
-        List<Payment> payments = paymentRepository.findByBookingId(booking.getId());
-        
-        if (payments.isEmpty()) {
-            throw new AppException(ErrorCode.PAYMENT_REQUIRED);
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public BookingResponseDTO cancelBooking(Long id) {
+        Booking booking = bookingCoreService.findBookingById(id);
+
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new AppException(ErrorCode.COMPLETED_BOOKING_UPDATE);
         }
 
-        BigDecimal totalPaidAmount = payments.stream()
-                .filter(payment -> PaymentStatus.COMPLETED.equals(payment.getStatus()))
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-        // Check if total paid amount equals booking total price
-        if (totalPaidAmount.compareTo(booking.getTotalPrice()) < 0) {
-            throw new AppException(ErrorCode.INCOMPLETE_PAYMENT);
-        }
+        Room room = booking.getRoom();
+        room.setRoomStatus(RoomStatus.AVAILABLE);
+        roomRepository.save(room);
+
+        BookingStatusUpdateDTO statusUpdate = new BookingStatusUpdateDTO();
+        statusUpdate.setStatus(BookingStatus.CANCELLED);
+        return updateBookingStatus(id, statusUpdate);
     }
-} 
+
+}
