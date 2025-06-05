@@ -1,5 +1,6 @@
 package project.hotel_booking_system.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -16,8 +17,8 @@ public class ApiResponseDTO<T> {
     @Builder.Default
     int status = 200;
     
-    @Builder.Default
-    LocalDateTime time = LocalDateTime.now();
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+    LocalDateTime time;
 
     boolean success;
     String message;

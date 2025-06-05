@@ -1,14 +1,15 @@
 package project.hotel_booking_system.service.impl;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import project.hotel_booking_system.dto.request.user_request.UserCreateRequest;
 import project.hotel_booking_system.dto.request.user_request.UserUpdateRequest;
 import project.hotel_booking_system.dto.response.UserResponse;
@@ -42,8 +43,7 @@ public class UserServiceImpl implements UserService {
         }
         
         User user = userMapper.toUser(request);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         User savedUser = userRepository.save(user);
         log.info("User created with ID: {}", savedUser.getId());
         return userMapper.toUserResponse(savedUser);
@@ -85,6 +85,15 @@ public class UserServiceImpl implements UserService {
         User user = findUserEntityById(id);
         return userMapper.toUserResponse(user);
     }
+
+    @Override
+    public UserResponse getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        return userMapper.toUserResponse(user);
+    }
+
+
 
     @Override
     @Transactional(readOnly = true)

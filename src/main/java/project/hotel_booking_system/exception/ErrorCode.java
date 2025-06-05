@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 public enum ErrorCode {
-    UNCATEGORIZED_EXCEPTION("Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
+    UNCATEGORIZED_EXCEPTION("Unknown error", HttpStatus.FORBIDDEN),
     ROOM_EXISTED("Room existed", HttpStatus.BAD_REQUEST),
     ROOM_NOT_FOUND("Room not found", HttpStatus.BAD_REQUEST),
     SERVICE_EXISTED("Service existed", HttpStatus.BAD_REQUEST),
@@ -43,8 +43,9 @@ public enum ErrorCode {
     USER_NOT_EXISTED("User does not exist", HttpStatus.BAD_REQUEST),
     USER_EXISTED("User already exists", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED("Unauthenticated", HttpStatus.UNAUTHORIZED),
-    ACCESS_DENIED("",HttpStatus.FORBIDDEN ),
-    CANNOT_CANCEL_BOOKING("",HttpStatus.BAD_REQUEST );
+    UNAUTHORIZED( "You do not have permission", HttpStatus.FORBIDDEN),
+    ACCESS_DENIED("Access denied. You don't have the required role to access this resource.", HttpStatus.FORBIDDEN),
+    CANNOT_CANCEL_BOOKING("Cannot cancel a completed booking", HttpStatus.BAD_REQUEST );
     private String message;
     private HttpStatusCode httpStatusCode;
 

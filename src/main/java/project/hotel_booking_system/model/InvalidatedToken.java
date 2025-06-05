@@ -32,6 +32,6 @@ public class InvalidatedToken {
     @Column(nullable = false, unique = true)
     String token;
 
-    @Column(nullable = false)
+    @Column(name = "invalidatedat", nullable = false)
     Date invalidatedAt;
 } 

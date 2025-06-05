@@ -9,6 +9,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -17,9 +19,13 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {
@@ -40,11 +46,14 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationEntryPoint authenticationEntryPoint;
 
+    @Autowired
+    private CustomAccessDeniedHandler accessDeniedHandler;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
     }
-    
+
     @Bean
     public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
         StrictHttpFirewall firewall = new StrictHttpFirewall();
@@ -64,23 +73,54 @@ public class SecurityConfig {
                 .authenticated());
 
         http.oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder))
-                .authenticationEntryPoint(authenticationEntryPoint));
+                .jwt(jwtConfigurer -> jwtConfigurer
+                        .decoder(customJwtDecoder)
+                        .jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler));
+
+        http.exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler));
 
         http.csrf(AbstractHttpConfigurer::disable);
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        
+
         return http.build();
     }
 
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
 
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            Collection<GrantedAuthority> authorities = new ArrayList<>();
 
-        return jwtAuthenticationConverter;
+            String role = jwt.getClaimAsString("role");
+            if (role != null) {
+                if (!role.startsWith("ROLE_")) {
+                    role = "ROLE_" + role;
+                }
+                authorities.add(new SimpleGrantedAuthority(role));
+            }
+
+            // Đọc từ claim "scope" (nếu có)
+            String scope = jwt.getClaimAsString("scope");
+            if (scope != null) {
+                authorities.add(new SimpleGrantedAuthority(scope));
+            }
+
+            // Đọc từ claim "authorities" (nếu có)
+            List<String> authoritiesList = jwt.getClaimAsStringList("authorities");
+            if (authoritiesList != null) {
+                authoritiesList.forEach(auth ->
+                        authorities.add(new SimpleGrantedAuthority(auth))
+                );
+            }
+
+            return authorities;
+        });
+
+        return converter;
     }
-} 
+}
