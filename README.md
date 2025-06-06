@@ -37,7 +37,7 @@ This application is a modern hotel booking management system featuring high secu
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/your-username/hotel-booking-system.git
+git clone https://github.com/nqluong/hotel-booking-system.git
 cd hotel-booking-system
 ```
 
@@ -70,7 +70,7 @@ CREATE DATABASE hotel_booking;
 ```
 
 2. Update `application.yml` configuration:
-```yml
+```yaml
 spring:
   datasource:
     url: jdbc:mysql://localhost:${DBMS_PORT}/${DBMS_NAME}
@@ -100,7 +100,7 @@ Interactive API documentation is available at:
 - **Swagger UI**: `http://localhost:8080/hotelbooking/swagger-ui.html`
 - **OpenAPI Spec**: `http://localhost:8080/hotelbooking/v3/api-docs`
 
-### 🔑 Authentication Endpoints
+### 🔑 Authentication Endpoints (`/auth`)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -109,27 +109,107 @@ Interactive API documentation is available at:
 | `POST` | `/auth/logout` | User logout |
 | `POST` | `/auth/introspect` | Validate token |
 
+### 👤 User Management Endpoints(`/users`)
+
+|  Method  | Endpoint                   |     Description     |  Access Level  |
+|:--------:|----------------------------|:-------------------:|:--------------:|
+|  `POST`  | `/users`                   | Register a new user |     Public     |
+|  `GET`   | `/users`                   |    Get all users    |   Admin Only   |
+|  `GET`   | `/users/{id}`              |   Get user by ID    |   Admin/Self   |
+|  `PUT`   | `/users/{id}`        | Update user information |   Admin/Self   |
+| `DELETE` | `/users/{id}`        |     Delete user     |   Admin Only   |
+| `PATCH`  | `/users/{id}/status` |  Update user role   |   Admin Only   |
+
+### 🏠 Room Management Endpoints(`/rooms`)
+
+| Method   | Endpoint          | Description                | Access Level |
+|----------|-------------------|----------------------------|--------------|
+| `GET`    | `/rooms`          | Get all rooms              | Public       |
+| `GET`    | `/rooms/{roomId}` | Get room by ID             | Public       |
+| `POST`   | `/rooms`          | Create new room            | Admin Only   |
+| `POST`   | `/rooms/search`   | Search for available rooms | Public       |
+| `PUT`    | `/rooms/{roomId}` | Update room                | Admin Only   |
+| `DELETE` | `/rooms/types`    | Delete room                | Admin Only   |
+
+
+### 📷 Room Image Management Endpoints (`/room-images`)
+
+| Method | Endpoint | Description | Access Level |
+|--------|----------|-------------|--------------|
+| `POST` | `/room-images/upload/{roomId}` | Upload room image | Admin Only |
+| `GET` | `/room-images/{roomId}` | Get all images by room ID | Public |
+| `DELETE` | `/room-images/{roomId}/images/{imageId}` | Delete room image | Admin Only |
+| `PUT` | `/room-images/{roomId}/images/{imageId}` | Update room image | Admin Only |
+| `PUT` | `/room-images/{roomId}/images/{imageId}/type` | Update image type | Admin Only |
+
+**Image Upload Parameters:**
+- `file`: Image file (multipart/form-data)
+- `imageType`: Type of image (THUMBNAIL, GALLERY, etc.)
+
+### 📅 Booking Management Endpoints
+
+#### Customer Booking APIs (`/bookings`)
+| Method | Endpoint | Description | Access Level  |
+|--------|----------|-------------|---------------|
+| `POST` | `/bookings` | Create new booking | Authenticated |
+| `GET` | `/bookings` | Get user's bookings | Authenticated |
+| `GET` | `/bookings/{id}` | Get booking details | Owner/Admin   |
+
+#### Admin Booking Management (`/admin/bookings`)
+| Method | Endpoint                         | Description            | Access Level |
+|--------|----------------------------------|------------------------|--------------|
+| `GET`  | `/admin/bookings`                | Get all bookings       | Admin Only   |
+| `GET`  | `/admin/bookings/{id}`           | Get booking by ID      | Admin Only   |
+| `GET`  | `/admin/bookings/user/{userId}`  | Get user bookings      | Admin Only   |
+| `GET`  | `/admin/booking/status/{status}` | Get bookings by status | Admin Only   |
+| `PUT`  | `/admin/bookings/{id}/status`    | Update booking status  | Admin Only   |
+| `PUT`  | `/admin/bookings/{id}/confirm`   | Confirm bookings       | Admin Only   |
+| `PUT`  | `/admin/booking/{id}/check-in`   | Check-in guest         | Admin Only   |
+| `PUT`  | `/admin/booking/{id}/check-out`  | Check-out guest        | Admin Only   |
+| `PUT`  | `/admin/booking/{id}/cancel`     | Cancel booking         | Admin Only   |
+
 ### 💳 Payment Endpoints
 
 #### Customer Payment APIs (`/payments`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/payments/process-payment` | Process VNPay payment |
-| `POST` | `/payments/process-checkout-payment` | Process checkout payment |
-| `POST` | `/payments/cash` | Process cash payment |
-| `GET` | `/payments/{id}` | Get payment details |
-| `GET` | `/payments/booking/{bookingId}` | Get booking payments |
-| `GET` | `/payments/vnpay-callback` | VNPay payment callback |
+| Method | Endpoint                            | Description              | Access Level   |
+|--------|-------------------------------------|--------------------------|----------------|
+| `POST` | `/payments/process-payment`         | Process VNPay payment    | Authenticated  |
+| `POST` | `/payments/process-checkout-payment` | Process checkout payment | Authenticated  |
+| `POST` | `/payments/cash`                    | Process cash payment     | Authenticated  |
+| `GET`  | `/payments/{id}`                    | Get payment details      | Authenticated  |
+| `GET`  | `/payments/booking/{bookingId}`     | Get booking payments     | Authenticated  |
+| `GET`  | `/payments/vnpay-callback`          | VNPay payment callback   | Public         |
+| `GET`  | `/payments/booking/{bookingId}`     | Get booking payment      | Authenticatied |
 
 #### Admin Payment Management (`/admin/payments`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/admin/payments` | Get all payments |
-| `GET` | `/admin/payments/{id}` | Get payment by ID |
-| `GET` | `/admin/payments/status/{status}` | Get payments by status |
-| `PUT` | `/admin/payments/{id}/status` | Update payment status |
-| `PUT` | `/admin/payments/{id}/mark-as-completed` | Mark as completed |
-| `PUT` | `/admin/payments/{id}/mark-as-failed` | Mark as failed |
+| Method | Endpoint                                 | Description               | Access Level |
+| ------ | ---------------------------------------- | ------------------------- | ------------ |
+| `GET`  | `/admin/payments`                        | Get all payments          | Admin Only   |
+| `GET`  | `/admin/payments/{id}`                   | Get payment by ID         | Admin Only   |
+| `GET`  | `/admin/payments/status/{status}`        | Get payments by status    | Admin Only   |
+| `PUT`  | `/admin/payments/{id}/status`            | Update payment status     | Admin Only   |
+| `PUT`  | `/admin/payments/{id}/mark-as-completed` | Mark payment as completed | Admin Only   |
+| `PUT`  | `/admin/payments/{id}/mark-as-failed`    | Mark payment as failed    | Admin Only   |
+
+### 📊 Revenue Reports Endpoints (`/admin/reports/revenue`)
+
+| Method | Endpoint | Description | Access Level |
+|--------|----------|-------------|--------------|
+| `GET` | `/admin/reports/revenue/check` | Check data availability | Admin Only |
+| `GET` | `/admin/reports/revenue/daily` | Get daily revenue report | Admin Only |
+| `GET` | `/admin/reports/revenue/monthly` | Get monthly revenue report | Admin Only |
+| `GET` | `/admin/reports/revenue/yearly` | Get yearly revenue report | Admin Only |
+| `GET` | `/admin/reports/revenue` | Get revenue report by period type | Admin Only |
+
+**Revenue Report Parameters:**
+- `startDate`: Start date (ISO format: YYYY-MM-DD)
+- `endDate`: End date (ISO format: YYYY-MM-DD)
+- `period`: Report period type (DAILY, MONTHLY, YEARLY) - for generic endpoint only
+
+**Date Range Restrictions:**
+- Maximum date range: 2 years
+- Start date must be before or equal to end date
+- Both dates are required
 
 ## 🏗️ Project Structure
 
@@ -169,8 +249,6 @@ src/
 - User profile management
 
 #### 👑 Admin Endpoints (ADMIN Role Required)
-- Room and image management
-- Booking management
 - Payment management
 - User management
 - System configuration

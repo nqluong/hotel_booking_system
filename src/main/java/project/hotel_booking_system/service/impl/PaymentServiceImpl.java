@@ -219,6 +219,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CUSTOMER')")
     public PaginationResponse<PaymentResponseDTO> getBookingPayments(Long bookingId, Pageable pageable) {
         Page<Payment> paymentsPage = paymentRepository.findByBookingId(bookingId, pageable);
         
