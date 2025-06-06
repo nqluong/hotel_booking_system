@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service;
+package project.hotel_booking_system.service.common;
 
 import org.springframework.web.multipart.MultipartFile;
 

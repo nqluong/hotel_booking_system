@@ -18,7 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.RoomImageResponse;
 import project.hotel_booking_system.enums.ImageType;
-import project.hotel_booking_system.service.impl.RoomImageServiceImpl;
+import project.hotel_booking_system.service.room.RoomImageServiceImpl;
 
 import java.time.LocalDateTime;
 import java.util.List;

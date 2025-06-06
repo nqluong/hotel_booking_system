@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service.impl;
+package project.hotel_booking_system.service.common;
 
 import java.time.Instant;
 import java.util.Date;

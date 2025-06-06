@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service.impl;
+package project.hotel_booking_system.service.authentication;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -38,7 +38,6 @@ import project.hotel_booking_system.model.InvalidatedToken;
 import project.hotel_booking_system.model.User;
 import project.hotel_booking_system.repository.InvalidatedTokenRepository;
 import project.hotel_booking_system.repository.UserRepository;
-import project.hotel_booking_system.service.AuthenticationService;
 
 @Service
 @Slf4j

@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.RevenueReportDTO;
 import project.hotel_booking_system.enums.ReportPeriod;
-import project.hotel_booking_system.service.RevenueReportService;
+import project.hotel_booking_system.service.common.RevenueReportService;
 
 @RestController
 @RequestMapping("/admin/reports/revenue")

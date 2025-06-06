@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service;
+package project.hotel_booking_system.service.booking;
 
 import project.hotel_booking_system.dto.response.BookingResponseDTO;
 import project.hotel_booking_system.enums.BookingStatus;

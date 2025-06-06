@@ -34,7 +34,7 @@ import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.dto.response.PaymentResponseDTO;
 import project.hotel_booking_system.enums.PaymentMethod;
 import project.hotel_booking_system.enums.PaymentStatus;
-import project.hotel_booking_system.service.PaymentService;
+import project.hotel_booking_system.service.payment.PaymentService;
 
 @ExtendWith(MockitoExtension.class)
 public class CustomerPaymentControllerTest {

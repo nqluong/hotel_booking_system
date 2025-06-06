@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service;
+package project.hotel_booking_system.service.payment;
 
 import project.hotel_booking_system.dto.request.payment_request.CashPaymentRequestDTO;
 import project.hotel_booking_system.dto.response.PaymentResponseDTO;

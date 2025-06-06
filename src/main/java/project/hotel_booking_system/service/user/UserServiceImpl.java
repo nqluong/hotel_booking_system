@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service.impl;
+package project.hotel_booking_system.service.user;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -6,7 +6,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +23,6 @@ import project.hotel_booking_system.exception.ResourceNotFoundException;
 import project.hotel_booking_system.mapper.UserMapper;
 import project.hotel_booking_system.model.User;
 import project.hotel_booking_system.repository.UserRepository;
-import project.hotel_booking_system.service.UserService;
 
 @Service
 @Slf4j

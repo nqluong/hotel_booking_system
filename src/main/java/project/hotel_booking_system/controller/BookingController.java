@@ -24,13 +24,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import project.hotel_booking_system.dto.request.booking_request.BookingCreationRequest;
-import project.hotel_booking_system.dto.request.room_request.RoomSearchRequest;
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.BookingResponseDTO;
 import project.hotel_booking_system.dto.response.PaginationResponse;
-import project.hotel_booking_system.dto.response.RoomResponse;
-import project.hotel_booking_system.service.CustomerBookingService;
-import project.hotel_booking_system.service.RoomService;
+import project.hotel_booking_system.service.booking.CustomerBookingService;
 
 /**
  * Controller for handling booking-related operations for customers

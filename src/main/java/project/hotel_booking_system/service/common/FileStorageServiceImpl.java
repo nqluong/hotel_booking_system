@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service.impl;
+package project.hotel_booking_system.service.common;
 
 import jakarta.annotation.PostConstruct;
 import lombok.AccessLevel;
@@ -6,10 +6,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import project.hotel_booking_system.service.FileStorageService;
 
-import javax.imageio.IIOException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

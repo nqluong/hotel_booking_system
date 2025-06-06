@@ -1,10 +1,8 @@
-package project.hotel_booking_system.service;
+package project.hotel_booking_system.service.booking;
 
 import java.util.List;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import project.hotel_booking_system.dto.request.booking_request.BookingCreationRequest;
 import project.hotel_booking_system.dto.request.booking_request.BookingStatusUpdateDTO;

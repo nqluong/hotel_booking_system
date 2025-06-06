@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service.impl;
+package project.hotel_booking_system.service.room;
 
 
 import java.time.LocalDateTime;
@@ -29,7 +29,6 @@ import project.hotel_booking_system.mapper.RoomMapper;
 import project.hotel_booking_system.model.Room;
 import project.hotel_booking_system.repository.RoomImageRepository;
 import project.hotel_booking_system.repository.RoomRepository;
-import project.hotel_booking_system.service.RoomService;
 
 @Service
 @RequiredArgsConstructor

@@ -24,7 +24,7 @@ import project.hotel_booking_system.dto.request.payment_request.PaymentStatusUpd
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.PaymentResponseDTO;
 import project.hotel_booking_system.enums.PaymentStatus;
-import project.hotel_booking_system.service.PaymentService;
+import project.hotel_booking_system.service.payment.PaymentService;
 
 @RestController
 @RequestMapping("/admin/payments")

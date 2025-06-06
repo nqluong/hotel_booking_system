@@ -12,7 +12,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Component;
 
 import project.hotel_booking_system.dto.request.authentication_request.IntrospectRequest;
-import project.hotel_booking_system.service.AuthenticationService;
+import project.hotel_booking_system.service.authentication.AuthenticationService;
 
 @Component
 public class CustomerJwtDecoder implements JwtDecoder {

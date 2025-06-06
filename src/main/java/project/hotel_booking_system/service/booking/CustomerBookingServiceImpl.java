@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service.impl;
+package project.hotel_booking_system.service.booking;
 
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
@@ -26,8 +26,6 @@ import project.hotel_booking_system.model.User;
 import project.hotel_booking_system.repository.BookingRepository;
 import project.hotel_booking_system.repository.RoomRepository;
 import project.hotel_booking_system.repository.UserRepository;
-import project.hotel_booking_system.service.BookingCoreService;
-import project.hotel_booking_system.service.CustomerBookingService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

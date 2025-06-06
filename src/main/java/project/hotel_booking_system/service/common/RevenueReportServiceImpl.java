@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service.impl;
+package project.hotel_booking_system.service.common;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -19,7 +19,6 @@ import project.hotel_booking_system.dto.response.RevenueReportDTO;
 import project.hotel_booking_system.enums.BookingStatus;
 import project.hotel_booking_system.enums.PaymentStatus;
 import project.hotel_booking_system.enums.ReportPeriod;
-import project.hotel_booking_system.service.RevenueReportService;
 
 @Service
 @Slf4j

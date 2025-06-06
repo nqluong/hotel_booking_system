@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service;
+package project.hotel_booking_system.service.payment;
 
 import java.util.List;
 

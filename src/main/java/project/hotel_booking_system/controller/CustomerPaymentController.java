@@ -30,8 +30,8 @@ import project.hotel_booking_system.dto.request.payment_request.PaymentRequestDT
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.dto.response.PaymentResponseDTO;
-import project.hotel_booking_system.service.CashPaymentService;
-import project.hotel_booking_system.service.PaymentService;
+import project.hotel_booking_system.service.payment.CashPaymentService;
+import project.hotel_booking_system.service.payment.PaymentService;
 
 @RestController
 @Slf4j

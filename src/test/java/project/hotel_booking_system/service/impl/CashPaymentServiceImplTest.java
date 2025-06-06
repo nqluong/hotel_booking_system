@@ -37,6 +37,7 @@ import project.hotel_booking_system.model.Room;
 import project.hotel_booking_system.model.User;
 import project.hotel_booking_system.repository.BookingRepository;
 import project.hotel_booking_system.repository.PaymentRepository;
+import project.hotel_booking_system.service.payment.CashPaymentServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 public class CashPaymentServiceImplTest {

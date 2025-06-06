@@ -27,8 +27,8 @@ import project.hotel_booking_system.dto.response.BookingResponseDTO;
 import project.hotel_booking_system.enums.BookingStatus;
 import project.hotel_booking_system.exception.AppException;
 import project.hotel_booking_system.exception.ErrorCode;
-import project.hotel_booking_system.service.AdminBookingService;
-import project.hotel_booking_system.service.CashPaymentService;
+import project.hotel_booking_system.service.booking.AdminBookingService;
+import project.hotel_booking_system.service.payment.CashPaymentService;
 
 @RestController
 @RequestMapping("/admin/bookings")

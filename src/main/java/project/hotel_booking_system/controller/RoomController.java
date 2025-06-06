@@ -22,7 +22,7 @@ import project.hotel_booking_system.dto.request.room_request.RoomUpdateRequest;
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.dto.response.RoomResponse;
-import project.hotel_booking_system.service.RoomService;
+import project.hotel_booking_system.service.room.RoomService;
 
 import java.time.LocalDateTime;
 

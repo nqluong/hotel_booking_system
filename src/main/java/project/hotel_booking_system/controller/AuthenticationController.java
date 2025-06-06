@@ -22,8 +22,7 @@ import project.hotel_booking_system.dto.request.authentication_request.RefreshRe
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.AuthenticationResponse;
 import project.hotel_booking_system.dto.response.IntrospectResponse;
-import project.hotel_booking_system.service.AuthenticationService;
-import project.hotel_booking_system.service.impl.AuthenticationServiceImpl;
+import project.hotel_booking_system.service.authentication.AuthenticationService;
 
 import java.time.LocalDateTime;
 

@@ -1,6 +1,5 @@
 package project.hotel_booking_system.controller;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,8 +30,8 @@ import project.hotel_booking_system.enums.PaymentStatus;
 import project.hotel_booking_system.exception.AppException;
 import project.hotel_booking_system.exception.ErrorCode;
 import project.hotel_booking_system.exception.GlobalExceptionHandler;
-import project.hotel_booking_system.service.CashPaymentService;
-import project.hotel_booking_system.service.PaymentService;
+import project.hotel_booking_system.service.payment.CashPaymentService;
+import project.hotel_booking_system.service.payment.PaymentService;
 
 @ExtendWith(MockitoExtension.class)
 public class CashPaymentControllerTest {

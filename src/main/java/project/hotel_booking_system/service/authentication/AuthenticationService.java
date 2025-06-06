@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service;
+package project.hotel_booking_system.service.authentication;
 
 import project.hotel_booking_system.dto.request.authentication_request.AuthenticationRequest;
 import project.hotel_booking_system.dto.request.authentication_request.IntrospectRequest;

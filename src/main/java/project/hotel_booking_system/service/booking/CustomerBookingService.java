@@ -1,4 +1,4 @@
-package project.hotel_booking_system.service;
+package project.hotel_booking_system.service.booking;
 
 import project.hotel_booking_system.dto.request.booking_request.BookingCreationRequest;
 import project.hotel_booking_system.dto.response.BookingResponseDTO;
