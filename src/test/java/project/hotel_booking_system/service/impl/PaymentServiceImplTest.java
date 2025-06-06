@@ -31,7 +31,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import project.hotel_booking_system.config.VnPayConfig;
+import project.hotel_booking_system.configuration.VnPayConfig;
 import project.hotel_booking_system.dto.request.payment_request.PaymentRequestDTO;
 import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.dto.response.PaymentResponseDTO;

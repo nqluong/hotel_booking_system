@@ -1,4 +1,4 @@
-package project.hotel_booking_system.config;
+package project.hotel_booking_system.configuration;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

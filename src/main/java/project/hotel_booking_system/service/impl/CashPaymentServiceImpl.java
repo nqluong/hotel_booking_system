@@ -6,6 +6,7 @@ import java.util.List;
 
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class CashPaymentServiceImpl implements CashPaymentService {
     BookingRepository bookingRepository;
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public PaymentResponseDTO processCashPayment(CashPaymentRequestDTO cashPaymentRequestDTO) {
         // Validate staff confirmation
         if (!cashPaymentRequestDTO.getStaffConfirmation()) {
@@ -75,6 +77,7 @@ public class CashPaymentServiceImpl implements CashPaymentService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public double getRemainingPaymentAmount(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));

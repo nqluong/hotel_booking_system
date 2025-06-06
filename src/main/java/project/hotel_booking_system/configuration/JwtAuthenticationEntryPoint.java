@@ -1,4 +1,4 @@
-package project.hotel_booking_system.config;
+package project.hotel_booking_system.configuration;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -15,9 +15,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

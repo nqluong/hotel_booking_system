@@ -1,4 +1,4 @@
-package project.hotel_booking_system.config;
+package project.hotel_booking_system.configuration;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -28,7 +28,7 @@ public class OpenApiConfig {
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
                                 .in(SecurityScheme.In.HEADER)
-                                .name("Authorization")))
-                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"));
+                                .name("Authorization")));
+
     }
 }

@@ -8,6 +8,7 @@ import java.util.List;
 
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import jakarta.persistence.EntityManager;
@@ -29,21 +30,25 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     private final EntityManager entityManager;
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public List<RevenueReportDTO> getDailyRevenueReport(LocalDate startDate, LocalDate endDate) {
         return getRevenueReport(startDate, endDate, ReportPeriod.DAILY);
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public List<RevenueReportDTO> getMonthlyRevenueReport(LocalDate startDate, LocalDate endDate) {
         return getRevenueReport(startDate, endDate, ReportPeriod.MONTHLY);
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public List<RevenueReportDTO> getYearlyRevenueReport(LocalDate startDate, LocalDate endDate) {
         return getRevenueReport(startDate, endDate, ReportPeriod.YEARLY);
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public List<RevenueReportDTO> getRevenueReport(LocalDate startDate, LocalDate endDate, ReportPeriod period) {
         try {
 

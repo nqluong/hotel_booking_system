@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,9 +28,7 @@ import project.hotel_booking_system.enums.BookingStatus;
 import project.hotel_booking_system.exception.AppException;
 import project.hotel_booking_system.exception.ErrorCode;
 import project.hotel_booking_system.service.AdminBookingService;
-import project.hotel_booking_system.service.BookingService;
 import project.hotel_booking_system.service.CashPaymentService;
-import project.hotel_booking_system.service.CustomerBookingService;
 
 @RestController
 @RequestMapping("/admin/bookings")
@@ -46,7 +45,8 @@ public class AdminBookingController {
     @GetMapping
     @Operation(
             summary = "Get all bookings",
-            description = "Retrieve a list of all bookings in the system"
+            description = "Retrieve a list of all bookings in the system",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -74,7 +74,8 @@ public class AdminBookingController {
     @GetMapping("/{id}")
     @Operation(
             summary = "Get booking by ID",
-            description = "Retrieve a specific booking by its ID"
+            description = "Retrieve a specific booking by its ID",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -111,7 +112,9 @@ public class AdminBookingController {
     @GetMapping("/user/{userId}")
     @Operation(
             summary = "Get user bookings",
-            description = "Retrieve all bookings for a specific user")
+            description = "Retrieve all bookings for a specific user",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -148,7 +151,9 @@ public class AdminBookingController {
     @PutMapping("/{id}/status")
     @Operation(
             summary = "Update booking status",
-            description = "Update the status of a booking")
+            description = "Update the status of a booking",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -195,7 +200,9 @@ public class AdminBookingController {
     @GetMapping("/status/{status}")
     @Operation(
             summary = "Get bookings by status",
-            description = "Retrieve all bookings with a specific status")
+            description = "Retrieve all bookings with a specific status",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -224,7 +231,9 @@ public class AdminBookingController {
     @PutMapping("/{id}/confirm")
     @Operation(
             summary = "Confirm booking",
-            description = "Update a booking status to CONFIRMED")
+            description = "Update a booking status to CONFIRMED",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -270,7 +279,9 @@ public class AdminBookingController {
     @PutMapping("/{id}/check-in")
     @Operation(
             summary = "Check-in guest",
-            description = "Update a booking status to CHECKED_IN")
+            description = "Update a booking status to CHECKED_IN",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -315,7 +326,9 @@ public class AdminBookingController {
     @PutMapping("/{id}/check-out")
     @Operation(
             summary = "Check-out guest",
-            description = "Update a booking status to COMPLETED")
+            description = "Update a booking status to COMPLETED",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -386,7 +399,8 @@ public class AdminBookingController {
     @PutMapping("/{id}/cancel")
     @Operation(
             summary = "Cancel booking",
-            description = "Update a booking status to CANCELLED"
+            description = "Update a booking status to CANCELLED",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
             @ApiResponse(

@@ -61,7 +61,7 @@ public class CustomerBookingServiceImpl implements CustomerBookingService {
                 request.getCheckInDate(), request.getCheckOutDate());
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         Booking booking = Booking.builder()
                 .room(room)
@@ -145,6 +145,6 @@ public class CustomerBookingServiceImpl implements CustomerBookingService {
         String currentUsername = auth.getName();
 
         return userRepository.findByUsername(currentUsername)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 }

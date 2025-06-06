@@ -6,19 +6,16 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,19 +23,23 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import project.hotel_booking_system.config.VnPayConfig;
+import project.hotel_booking_system.configuration.VnPayConfig;
 import project.hotel_booking_system.dto.request.payment_request.PaymentRequestDTO;
 import project.hotel_booking_system.dto.request.payment_request.PaymentStatusUpdateDTO;
 import project.hotel_booking_system.dto.response.PaginationResponse;
 import project.hotel_booking_system.dto.response.PaymentResponseDTO;
 import project.hotel_booking_system.enums.BookingStatus;
 import project.hotel_booking_system.enums.PaymentStatus;
+import project.hotel_booking_system.exception.AppException;
+import project.hotel_booking_system.exception.ErrorCode;
 import project.hotel_booking_system.exception.ResourceNotFoundException;
 import project.hotel_booking_system.model.Booking;
 import project.hotel_booking_system.model.Payment;
 import project.hotel_booking_system.repository.BookingRepository;
 import project.hotel_booking_system.repository.PaymentRepository;
 import project.hotel_booking_system.service.PaymentService;
+
+import static org.springframework.security.authorization.AuthorityReactiveAuthorizationManager.hasRole;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +52,7 @@ public class PaymentServiceImpl implements PaymentService {
     VnPayConfig vnPayConfig;
     
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public List<PaymentResponseDTO> getAllPayments() {
         List<Payment> payments = paymentRepository.findAll();
         return payments.stream()
@@ -59,14 +61,21 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CUSTOMER') ")
     public PaymentResponseDTO getPaymentById(Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUser = auth.getName();
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + id));
+        if (hasRole(auth, "CUSTOMER") && !payment.getBooking().getUser().getUsername().equals(currentUser)) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
         return mapToPaymentResponseDTO(payment);
     }
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public PaymentResponseDTO updatePaymentStatus(Long id, PaymentStatusUpdateDTO statusUpdateDTO) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + id));
@@ -87,6 +96,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public List<PaymentResponseDTO> getPaymentsByStatus(PaymentStatus status) {
         List<Payment> payments = paymentRepository.findByStatus(status);
         return payments.stream()
@@ -96,6 +106,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CUSTOMER')")
     public PaymentResponseDTO createPayment(PaymentRequestDTO paymentRequestDTO) {
         Booking booking = bookingRepository.findById(paymentRequestDTO.getBookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + paymentRequestDTO.getBookingId()));
@@ -404,5 +415,17 @@ public class PaymentServiceImpl implements PaymentService {
                 throw new ResourceNotFoundException("Invalid payment ID: " + txnRef);
             }
         }
+    }
+
+    private boolean hasRequiredRole(Authentication auth, String... roles) {
+        return auth.getAuthorities().stream()
+                .anyMatch(authority ->
+                        Arrays.stream(roles)
+                                .anyMatch(role -> authority.getAuthority().equals("ROLE_" + role)));
+    }
+
+    private boolean hasRole(Authentication auth, String role) {
+        return auth.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_" + role));
     }
 } 

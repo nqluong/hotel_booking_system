@@ -18,7 +18,6 @@ import project.hotel_booking_system.mapper.BookingMapper;
 import project.hotel_booking_system.model.Booking;
 import project.hotel_booking_system.model.Room;
 import project.hotel_booking_system.repository.BookingRepository;
-import project.hotel_booking_system.repository.PaymentRepository;
 import project.hotel_booking_system.repository.RoomRepository;
 import project.hotel_booking_system.service.AdminBookingService;
 import project.hotel_booking_system.service.BookingCoreService;
@@ -36,7 +35,6 @@ public class AdminBookingServiceImpl implements AdminBookingService {
     BookingRepository bookingRepository;
     RoomRepository roomRepository;
     BookingMapper bookingMapper;
-    PaymentRepository paymentRepository;
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")

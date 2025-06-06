@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -49,6 +48,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
+    PasswordEncoder passwordEncoder;
 
     @NonFinal
     @Value("${jwt.signer-key}")
@@ -95,7 +95,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             var userName = signedJWT.getJWTClaimsSet().getSubject();
             var user = userRepository.findByUsername(userName)
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+            if (!user.getIsActive()) {
+                throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+            }
+
             var token = generateToken(user);
             return AuthenticationResponse.builder()
                     .token(token)
@@ -121,21 +126,29 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             invalidatedTokenRepository.save(invalidatedToken);
         }catch(AppException | ParseException | JOSEException e){
             log.error("Error while logging out: {}", e.getMessage());
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        if (request.getUsername() == null || request.getPassword() == null) {
-            throw new IllegalArgumentException("Username and password must not be null");
-        }
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
-        var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        var user = userRepository.findByUsername(request.getUsername().trim())
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
 
         boolean isPasswordValid = passwordEncoder.matches(request.getPassword(), user.getPassword());
+
         if (!isPasswordValid) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        if(!user.getIsActive()) {
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
         }
         var token = generateToken(user);
 
@@ -159,6 +172,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .jwtID(UUID.randomUUID().toString())
                     .claim("userId", user.getId())
                     .claim("role", "ROLE_"+user.getRole().name().toUpperCase())
+                    .claim("isActive", user.getIsActive())
                     .build();
 
             Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -172,6 +186,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException {
+
         if (invalidatedTokenRepository.existsByToken(token)) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
@@ -200,11 +215,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     public void invalidateToken(String token) {
-        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
-                .token(token)
-                .invalidatedAt(new Date())
-                .build();
-        invalidatedTokenRepository.save(invalidatedToken);
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            String jti = signedJWT.getJWTClaimsSet().getJWTID();
+            Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                    .token(jti)
+                    .invalidatedAt(expiryTime)
+                    .build();
+            invalidatedTokenRepository.save(invalidatedToken);
+        } catch (ParseException e) {
+            log.error("Error parsing token for invalidation: {}", e.getMessage());
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
     }
 
     private StringBuilder buildScope(User user) {

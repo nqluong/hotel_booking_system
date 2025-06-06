@@ -1,4 +1,4 @@
-package project.hotel_booking_system.config;
+package project.hotel_booking_system.configuration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -11,10 +11,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
@@ -29,7 +26,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {
-            "/users", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh"
+            "/users", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh",
+            "/rooms/search"
     };
 
     private final String[] SWAGGER_ENDPOINTS = {
@@ -38,6 +36,9 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/swagger-resources/**",
             "/webjars/**"
+    };
+    private final String[] PUBLIC_GET_ENDPOINTS = {
+            "/rooms", "/rooms/**","/room-images","/room-images/**"
     };
 
     @Autowired
@@ -49,10 +50,6 @@ public class SecurityConfig {
     @Autowired
     private CustomAccessDeniedHandler accessDeniedHandler;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(10);
-    }
 
     @Bean
     public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
@@ -68,6 +65,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(request -> request
                 .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                 .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
                 .anyRequest()
                 .authenticated());
@@ -104,23 +102,10 @@ public class SecurityConfig {
                 authorities.add(new SimpleGrantedAuthority(role));
             }
 
-            // Đọc từ claim "scope" (nếu có)
-            String scope = jwt.getClaimAsString("scope");
-            if (scope != null) {
-                authorities.add(new SimpleGrantedAuthority(scope));
-            }
-
-            // Đọc từ claim "authorities" (nếu có)
-            List<String> authoritiesList = jwt.getClaimAsStringList("authorities");
-            if (authoritiesList != null) {
-                authoritiesList.forEach(auth ->
-                        authorities.add(new SimpleGrantedAuthority(auth))
-                );
-            }
-
             return authorities;
         });
 
+        converter.setPrincipalClaimName("sub");
         return converter;
     }
 }

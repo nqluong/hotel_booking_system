@@ -57,7 +57,6 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
     public PaginationResponse<RoomResponse> getAllRoom(Pageable pageable) {
         Page<Room> rooms = roomRepository.findAll(pageable);
 
@@ -83,6 +82,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public RoomResponse createRoom(RoomCreationRequest roomCreationRequest) {
         roomRepository.findByRoomNumber(roomCreationRequest.getRoomNumber()).ifPresent(
                 room -> {throw new AppException(ErrorCode.ROOM_EXISTED);
@@ -102,6 +102,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public RoomResponse updateRoom(Long num, RoomUpdateRequest roomUpdateRequest) {
         Room room = roomRepository.findById(num).orElseThrow(
                 () -> new AppException(ErrorCode.ROOM_NOT_FOUND)
@@ -118,6 +119,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteRoom(Long num) {
         Room room = roomRepository.findById(num).orElseThrow(
                 () -> new AppException(ErrorCode.ROOM_NOT_FOUND)

@@ -3,13 +3,12 @@ package project.hotel_booking_system.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -24,89 +23,111 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(AuthorizationDeniedException.class)
-    public ApiResponseDTO<?> handleAuthorizationDeniedException(AuthorizationDeniedException ex, HttpServletRequest request) {
-        log.error("Authorization denied for request: {}", request.getRequestURI(), ex);
-        return ApiResponseDTO.builder()
-                .status(HttpStatus.FORBIDDEN.value())
-                .time(LocalDateTime.now())
-                .success(false)
-                .message("Access denied. You don't have the required role to access this resource.")
-                .build();
-    }
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponseDTO<Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        log.error("Resource not found: {}", ex.getMessage(), ex);
 
-    @ExceptionHandler(AccessDeniedException.class)
-    public ApiResponseDTO<?> handleAccessDeniedException(AccessDeniedException ex, HttpServletRequest request) {
-        log.error("Access denied for request: {}", request.getRequestURI(), ex);
-        return ApiResponseDTO.builder()
-                .status(HttpStatus.FORBIDDEN.value())
-                .time(LocalDateTime.now())
-                .success(false)
-                .message("Access denied. You don't have the required role to access this resource.")
-                .build();
-    }
-
-    @ExceptionHandler(AppException.class)
-    public ApiResponseDTO<?> handleAppException(AppException ex) {
-        log.error("An application error occurred: {}", ex.getMessage(), ex);
-        return ApiResponseDTO.builder()
-                .status(ex.getErrorCode().getHttpStatusCode().value())
-                .time(LocalDateTime.now())
-                .success(false)
-                .message(ex.getErrorCode().getMessage())
-                .build();
-    }
-
-    @ExceptionHandler(NoHandlerFoundException.class)
-    public ApiResponseDTO<?> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpServletRequest request) {
-        log.error("No handler found for request: {}", request.getRequestURI(), ex);
-        return ApiResponseDTO.builder()
+        ApiResponseDTO<Object> response = ApiResponseDTO.builder()
                 .status(HttpStatus.NOT_FOUND.value())
                 .time(LocalDateTime.now())
                 .success(false)
-                .message("The requested resource was not found")
+                .message(ex.getMessage())
+                .result(null)
                 .build();
-    }
 
-    @ExceptionHandler(Exception.class)
-    public ApiResponseDTO<?> handleException(Exception ex, HttpServletRequest request) {
-        log.error("An error occurred: {}", ex.getMessage(), ex);
-        return ApiResponseDTO.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .time(LocalDateTime.now())
-                .success(false)
-                .message("An unexpected error occurred")
-                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
-    public ApiResponseDTO<?> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex) {
+    public ResponseEntity<ApiResponseDTO<Object>> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex) {
         log.error("Resource already exists: {}", ex.getMessage(), ex);
-        return ApiResponseDTO.builder()
+
+        ApiResponseDTO<Object> response = ApiResponseDTO.builder()
                 .status(HttpStatus.CONFLICT.value())
                 .time(LocalDateTime.now())
                 .success(false)
                 .message(ex.getMessage())
                 .result(null)
                 .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ResponseBody
-    public ApiResponseDTO<Object> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        return ApiResponseDTO.builder()
-                .status(HttpStatus.NOT_FOUND.value())
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiResponseDTO<Object>> handleAppException(AppException ex) {
+        log.error("Application error: {}", ex.getMessage(), ex);
+
+        ApiResponseDTO<Object> response = ApiResponseDTO.builder()
+                .status(ex.getErrorCode().getHttpStatusCode().value())
                 .time(LocalDateTime.now())
                 .success(false)
-                .message(ex.getMessage())
+                .message(ex.getErrorCode().getMessage())
+                .build();
+
+        return ResponseEntity.status(ex.getErrorCode().getHttpStatusCode()).body(response);
+    }
+
+    @ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
+    public ResponseEntity<ApiResponseDTO<Object>> handleAccessDeniedException(Exception ex, HttpServletRequest request) {
+        log.error("Access denied for request: {}", request.getRequestURI(), ex);
+
+        ApiResponseDTO<Object> response = ApiResponseDTO.builder()
+                .status(HttpStatus.FORBIDDEN.value())
+                .time(LocalDateTime.now())
+                .success(false)
+                .message("Access denied. You don't have the required permissions to access this resource.")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponseDTO<Object>> handleIllegalStateException(IllegalStateException ex) {
+        log.error("Illegal state: {}", ex.getMessage(), ex);
+
+        String message = ex.getMessage();
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+
+        if ("No authenticated user found".equals(message)) {
+            message = "Unauthorized - Please login to access this resource";
+            status = HttpStatus.UNAUTHORIZED;
+        }
+
+        ApiResponseDTO<Object> response = ApiResponseDTO.builder()
+                .status(status.value())
+                .time(LocalDateTime.now())
+                .success(false)
+                .message(message)
                 .result(null)
                 .build();
+
+        return ResponseEntity.status(status).body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponseDTO<List<String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        log.error("Validation error: {}", ex.getMessage());
+
+        List<String> errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.toList());
+
+        ApiResponseDTO<List<String>> response = ApiResponseDTO.<List<String>>builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .time(LocalDateTime.now())
+                .success(false)
+                .message("Validation error")
+                .result(errors)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponseDTO<Object> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<ApiResponseDTO<Object>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         log.error("Type mismatch: {}", ex.getMessage());
 
         String message;
@@ -130,33 +151,47 @@ public class GlobalExceptionHandler {
             message = "Invalid parameter: " + ex.getName() + " should be a valid " + ex.getRequiredType().getSimpleName();
         }
 
-        return ApiResponseDTO.builder()
+        ApiResponseDTO<Object> response = ApiResponseDTO.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
                 .time(LocalDateTime.now())
                 .success(false)
                 .message(message)
                 .result(null)
                 .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ResponseBody
-    public ApiResponseDTO<List<String>> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ApiResponseDTO<Object>> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpServletRequest request) {
+        log.error("No handler found for request: {}", request.getRequestURI(), ex);
 
-        List<String> errors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(FieldError::getDefaultMessage)
-                .collect(Collectors.toList());
-
-        return ApiResponseDTO.<List<String>>builder()
-                .status(HttpStatus.BAD_REQUEST.value())
+        ApiResponseDTO<Object> response = ApiResponseDTO.builder()
+                .status(HttpStatus.NOT_FOUND.value())
                 .time(LocalDateTime.now())
-                .message("Validation error")
-                .result(errors)
+                .success(false)
+                .message("The requested resource was not found")
                 .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponseDTO<Object>> handleException(Exception ex, HttpServletRequest request) {
+        log.error("Unexpected error occurred for request: {}", request.getRequestURI(), ex);
+
+        // Log chi tiết exception để debug
+        log.error("Exception type: {}", ex.getClass().getName());
+        log.error("Exception message: {}", ex.getMessage());
+        log.error("Stack trace: ", ex);
+
+        ApiResponseDTO<Object> response = ApiResponseDTO.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .time(LocalDateTime.now())
+                .success(false)
+                .message("An unexpected error occurred")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
 }

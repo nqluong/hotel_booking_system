@@ -1,4 +1,4 @@
-package project.hotel_booking_system.config;
+package project.hotel_booking_system.configuration;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

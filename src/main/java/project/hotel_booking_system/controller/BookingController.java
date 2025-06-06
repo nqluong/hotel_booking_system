@@ -2,6 +2,7 @@ package project.hotel_booking_system.controller;
 
 import java.time.LocalDateTime;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,76 +42,14 @@ import project.hotel_booking_system.service.RoomService;
 public class BookingController {
 
     @Autowired
-    private RoomService roomService;
-
-    @Autowired
     private CustomerBookingService bookingService;
-
-    /**
-     * Example request body:
-     * {
-     * "checkInDate": "2025-06-20",
-     * "checkOutDate": "2025-06-25",
-     * "roomType": "DOUBLE",
-     * "minPrice": 100.00,
-     * "maxPrice": 300.00
-     * }
-     */
-    @Operation(
-            summary = "Search for available rooms",
-            description = "Search for available rooms based on date range, room type, and price range"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Rooms found successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid search parameters",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseDTO.class)
-                    )
-            )
-    })
-    @PostMapping("/available")
-    public ApiResponseDTO<PaginationResponse<RoomResponse>> searchAvailableRooms(
-            @Parameter(
-                    description = "Search criteria for finding available rooms",
-                    required = true,
-                    schema = @Schema(implementation = RoomSearchRequest.class)
-            )
-            @RequestBody RoomSearchRequest searchRequest,
-
-            @Parameter(description = "Page number (0-based index)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
-
-            @Parameter(description = "Number of items per page", example = "10")
-            @RequestParam(defaultValue = "10") int size) {
-
-        log.info("Searching for available rooms with criteria: {}", searchRequest);
-        Pageable pageable = PageRequest.of(page, size);
-
-        return ApiResponseDTO.<PaginationResponse<RoomResponse>>builder()
-                .status(HttpStatus.OK.value())
-                .time(LocalDateTime.now())
-                .success(true)
-                .message("Available rooms retrieved successfully")
-                .result(roomService.searchAvailableRooms(searchRequest, pageable))
-                .build();
-    }
-
 
     //Create a new booking
 
     @Operation(
             summary = "Create a new booking",
-            description = "Create a new room booking with the specified dates and room"
+            description = "Create a new room booking with the specified dates and room",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -162,7 +101,8 @@ public class BookingController {
 
     @Operation(
             summary = "Get booking details",
-            description = "Get detailed information about a specific booking belonging to current user"
+            description = "Get detailed information about a specific booking belonging to current user",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -209,7 +149,8 @@ public class BookingController {
 
     @Operation(
             summary = "Get user bookings",
-            description = "Get all bookings for current authenticated user with pagination"
+            description = "Get all bookings for current authenticated user with pagination",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
             @ApiResponse(

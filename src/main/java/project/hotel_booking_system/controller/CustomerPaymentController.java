@@ -2,6 +2,7 @@ package project.hotel_booking_system.controller;
 
 import java.time.LocalDateTime;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -43,48 +44,49 @@ public class CustomerPaymentController {
     private final CashPaymentService cashPaymentService;
 
     @Operation(
-        summary = "Process payment with VNPAY",
-        description = "Process a payment for a booking using VNPAY payment gateway"
+            summary = "Process payment with VNPAY",
+            description = "Process a payment for a booking using VNPAY payment gateway",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Payment process initiated successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Payment process initiated successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid payment parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Booking not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid payment parameters",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "Booking not found",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        )
     })
     @PostMapping("/process-payment")
     public ApiResponseDTO<PaymentResponseDTO> processPayment(
             @Parameter(
-                description = "Payment details including booking ID and payment method",
-                required = true,
-                schema = @Schema(implementation = PaymentRequestDTO.class)
+                    description = "Payment details including booking ID and payment method",
+                    required = true,
+                    schema = @Schema(implementation = PaymentRequestDTO.class)
             )
             @RequestBody PaymentRequestDTO paymentRequestDTO,
             HttpServletRequest request) {
-        
+
         log.info("Processing payment for booking ID: {}", paymentRequestDTO.getBookingId());
         String clientIp = getClientIp(request);
-        
+
         return ApiResponseDTO.<PaymentResponseDTO>builder()
                 .status(HttpStatus.OK.value())
                 .time(LocalDateTime.now())
@@ -95,49 +97,50 @@ public class CustomerPaymentController {
     }
 
     @Operation(
-        summary = "Process checkout payment",
-        description = "Process the remaining payment (70%) during check-out"
+            summary = "Process checkout payment",
+            description = "Process the remaining payment (70%) during check-out",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Checkout payment process initiated successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Checkout payment process initiated successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid payment parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Booking not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid payment parameters",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "Booking not found",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        )
     })
     @PostMapping("/process-checkout-payment")
     public ApiResponseDTO<PaymentResponseDTO> processCheckoutPayment(
             @Parameter(
-                description = "Payment details for checkout including booking ID",
-                required = true,
-                schema = @Schema(implementation = PaymentRequestDTO.class)
+                    description = "Payment details for checkout including booking ID",
+                    required = true,
+                    schema = @Schema(implementation = PaymentRequestDTO.class)
             )
             @RequestBody PaymentRequestDTO paymentRequestDTO,
             HttpServletRequest request) {
 
         paymentRequestDTO.setAdvancePayment(false);
-        
+
         String clientIp = getClientIp(request);
-        
+
         return ApiResponseDTO.<PaymentResponseDTO>builder()
                 .status(HttpStatus.OK.value())
                 .time(LocalDateTime.now())
@@ -148,26 +151,26 @@ public class CustomerPaymentController {
     }
 
     @Operation(
-        summary = "Handle VNPAY payment callback",
-        description = "Process the callback from VNPAY payment gateway"
+            summary = "Handle VNPAY payment callback",
+            description = "Process the callback from VNPAY payment gateway"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Payment callback processed successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Payment callback processed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid callback parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid callback parameters",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        )
     })
     @GetMapping("/vnpay-callback")
     public ApiResponseDTO<PaymentResponseDTO> handleVnPayCallback(
@@ -178,7 +181,7 @@ public class CustomerPaymentController {
             @RequestParam String vnp_OrderInfo,
             @RequestParam String vnp_BankCode,
             @RequestParam String vnp_TransactionNo) {
-        
+
         log.info("Received VNPAY callback for transaction: {}", vnp_TransactionNo);
 
         StringBuilder responseBuilder = new StringBuilder();
@@ -188,13 +191,13 @@ public class CustomerPaymentController {
         responseBuilder.append("vnp_OrderInfo=").append(vnp_OrderInfo).append("&");
         responseBuilder.append("vnp_BankCode=").append(vnp_BankCode).append("&");
         responseBuilder.append("vnp_TransactionNo=").append(vnp_TransactionNo);
-        
+
         PaymentResponseDTO paymentResponse = paymentService.handleVnPayCallback(responseBuilder.toString());
-        
-        String message = "00".equals(vnp_ResponseCode) 
-                ? "Payment completed successfully" 
+
+        String message = "00".equals(vnp_ResponseCode)
+                ? "Payment completed successfully"
                 : "Payment failed";
-        
+
         return ApiResponseDTO.<PaymentResponseDTO>builder()
                 .status(HttpStatus.OK.value())
                 .time(LocalDateTime.now())
@@ -205,32 +208,33 @@ public class CustomerPaymentController {
     }
 
     @Operation(
-        summary = "Get payment details",
-        description = "Get detailed information about a specific payment"
+            summary = "Get payment details",
+            description = "Get detailed information about a specific payment",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Payment found successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Payment found successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Payment not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
             )
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "Payment not found",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        )
     })
     @GetMapping("/{id}")
     public ApiResponseDTO<PaymentResponseDTO> getPaymentById(
             @Parameter(description = "Payment ID", required = true)
             @PathVariable("id") Long id) {
-        
+
         return ApiResponseDTO.<PaymentResponseDTO>builder()
                 .status(HttpStatus.OK.value())
                 .time(LocalDateTime.now())
@@ -241,40 +245,41 @@ public class CustomerPaymentController {
     }
 
     @Operation(
-        summary = "Get booking payments",
-        description = "Get all payments for a specific booking with pagination"
+            summary = "Get booking payments",
+            description = "Get all payments for a specific booking with pagination",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Payments retrieved successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Payments retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Booking not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
             )
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "Booking not found",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        )
     })
     @GetMapping("/booking/{bookingId}")
     public ApiResponseDTO<PaginationResponse<PaymentResponseDTO>> getBookingPayments(
             @Parameter(description = "Booking ID", required = true)
             @PathVariable("bookingId") Long bookingId,
-            
+
             @Parameter(description = "Page number (0-based index)", example = "0")
             @RequestParam(defaultValue = "0") int page,
-            
+
             @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Pageable pageable = PageRequest.of(page, size);
-        
+
         return ApiResponseDTO.<PaginationResponse<PaymentResponseDTO>>builder()
                 .status(HttpStatus.OK.value())
                 .time(LocalDateTime.now())
@@ -285,34 +290,35 @@ public class CustomerPaymentController {
     }
 
     @Operation(
-        summary = "Process cash payment",
-        description = "Process a cash payment for a booking"
+            summary = "Process cash payment",
+            description = "Process a cash payment for a booking",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successfully processed cash payment",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully processed cash payment",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid payment data",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Booking not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid payment data",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "Booking not found",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        )
     })
     @PostMapping("/cash")
     public ApiResponseDTO<PaymentResponseDTO> processCashPayment(
@@ -324,28 +330,29 @@ public class CustomerPaymentController {
                 .result(cashPaymentService.processCashPayment(cashPaymentRequestDTO))
                 .build();
     }
-    
+
     @Operation(
-        summary = "Get remaining payment amount",
-        description = "Get the remaining amount to be paid for a booking"
+            summary = "Get remaining payment amount",
+            description = "Get the remaining amount to be paid for a booking",
+            security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successfully retrieved remaining amount",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved remaining amount",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Booking not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
             )
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "Booking not found",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ApiResponseDTO.class)
-            )
-        )
     })
     @GetMapping("/cash/remaining/{bookingId}")
     public ApiResponseDTO<Double> getRemainingPaymentAmount(
@@ -371,7 +378,7 @@ public class CustomerPaymentController {
             clientIp = request.getRemoteAddr();
         }
 
-        if(clientIp != null && clientIp.contains(",")){
+        if (clientIp != null && clientIp.contains(",")) {
             clientIp = clientIp.split(",")[0].trim();
         }
         return clientIp;
