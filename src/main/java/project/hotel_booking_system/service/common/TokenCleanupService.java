@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import project.hotel_booking_system.repository.InvalidatedTokenRepository;
 
 @Service
@@ -22,6 +23,7 @@ public class TokenCleanupService {
     private long refreshableDuration;
 
     @Scheduled(cron = "0 0 * * * *")
+    @Transactional
     public void cleanupExpiredTokens() {
         try {
             Date expirationThreshold = Date.from(Instant.now().minusSeconds(refreshableDuration));

@@ -67,7 +67,12 @@ public enum ErrorCode {
     INVALID_PAYMENT_AMOUNT("Invalid payment amount", HttpStatus.BAD_REQUEST),
     PAYMENT_REQUIRED("Payment is required to complete this operation", HttpStatus.BAD_REQUEST),
     INCOMPLETE_PAYMENT("Full payment is required to complete checkout", HttpStatus.BAD_REQUEST),
-    CASH_PAYMENT_REQUIRED("Cash payment confirmation is required", HttpStatus.BAD_REQUEST);
+    CASH_PAYMENT_REQUIRED("Cash payment confirmation is required", HttpStatus.BAD_REQUEST),
+
+    //Response related
+    REVIEW_NOT_FOUND("Review not found", HttpStatus.NOT_FOUND),
+    REVIEW_ALREADY_EXISTS("User already reviewed this room", HttpStatus.CONFLICT),
+    REVIEW_NOT_ALLOWED("User must complete a booking before reviewing", HttpStatus.BAD_REQUEST);
 
     private String message;
     private HttpStatusCode httpStatusCode;

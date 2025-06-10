@@ -3,6 +3,7 @@ package project.hotel_booking_system.repository;
 import java.util.Date;
 import java.util.List;
 
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,4 +28,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findOverlappingBookings(@Param("roomId") Long roomId, 
                                          @Param("checkInDate") Date checkInDate,
                                          @Param("checkOutDate") Date checkOutDate);
+
+    boolean existsByUserIdAndRoomIdAndStatus(Long userId, @NotNull(message = "Room ID is required") Long roomId, BookingStatus bookingStatus);
 }

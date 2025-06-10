@@ -38,7 +38,7 @@ public class SecurityConfig {
             "/webjars/**"
     };
     private final String[] PUBLIC_GET_ENDPOINTS = {
-            "/rooms", "/rooms/**","/room-images","/room-images/**"
+            "/rooms", "/rooms/**","/room-images","/room-images/**", "reviews/*", "/reviews/room/**",
     };
 
     @Autowired
