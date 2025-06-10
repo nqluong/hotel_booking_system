@@ -22,7 +22,7 @@ public class TokenCleanupService {
     @Value("${jwt.refreshable-duration}")
     private long refreshableDuration;
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0/30 * * * *")
     @Transactional
     public void cleanupExpiredTokens() {
         try {
