@@ -1,10 +1,10 @@
 # 🏨 Hotel Booking System
 
-A comprehensive hotel booking management system built with Spring Boot, providing robust APIs for room reservations, user authentication, and payment processing.
+A comprehensive hotel booking management system built with Spring Boot, providing robust APIs for room reservations, user authentication, payment processing, reviews, and room availability management.
 
 ## 📋 Overview
 
-This application is a modern hotel booking management system featuring high security, online payment integration, and role-based user management designed for both customers and hotel administrators.
+This application is a modern hotel booking management system featuring high security, online payment integration, role-based user management, customer reviews, and advanced room availability tracking designed for both customers and hotel administrators.
 
 ## ✨ Key Features
 
@@ -12,6 +12,9 @@ This application is a modern hotel booking management system featuring high secu
 - 🏠 **Room Booking Management** - Complete reservation lifecycle management
 - 💳 **VNPay Payment Integration** - Secure online payment processing
 - 👥 **Role-based Access Control** - Admin and Customer role separation
+- ⭐ **Review System** - Customer reviews and ratings for rooms
+- 📅 **Room Availability Management** - Advanced calendar and availability tracking
+- 🚫 **Room Blocking** - Block specific dates for maintenance or other purposes
 - 📚 **API Documentation** - Interactive Swagger/OpenAPI documentation
 - 🛡️ **Security First** - Industry-standard security practices
 
@@ -131,6 +134,27 @@ Interactive API documentation is available at:
 | `PUT`    | `/rooms/{roomId}` | Update room                | Admin Only   |
 | `DELETE` | `/rooms/types`    | Delete room                | Admin Only   |
 
+### 📅 Room Availability Management Endpoints (`/rooms`)
+
+| Method | Endpoint | Description | Access Level |
+|--------|----------|-------------|--------------|
+| `GET` | `/rooms/{roomId}/availability` | Get room availability for date range | Public |
+| `GET` | `/rooms/availability` | Get availability for all rooms (paginated) | Public |
+| `GET` | `/rooms/availability/calendar` | Get paginated calendar view | Public |
+| `GET` | `/rooms/{roomId}/blocked-dates` | Get blocked dates for a room | Public |
+| `GET` | `/rooms/{roomId}/availability/quick` | Quick availability check for specific dates | Public |
+| `PUT` | `/rooms/{roomId}/block-dates` | Block dates for a room | Admin Only |
+| `DELETE` | `/rooms/{roomId}/block-dates` | Unblock dates for a room | Admin Only |
+
+**Availability Parameters:**
+- `startDate`: Start date (ISO format: YYYY-MM-DD)
+- `endDate`: End date (ISO format: YYYY-MM-DD)
+- `year`: Year for calendar view
+- `month`: Month for calendar view (1-12)
+- `page`: Page number (0-based)
+- `size`: Number of items per page
+- `sortBy`: Field to sort by (default: roomNumber)
+- `sortDir`: Sort direction (asc/desc)
 
 ### 📷 Room Image Management Endpoints (`/room-images`)
 
@@ -145,6 +169,28 @@ Interactive API documentation is available at:
 **Image Upload Parameters:**
 - `file`: Image file (multipart/form-data)
 - `imageType`: Type of image (THUMBNAIL, GALLERY, etc.)
+
+### ⭐ Review Management Endpoints (`/reviews`)
+
+| Method | Endpoint | Description | Access Level |
+|----|----------|-------------|--------------|
+| `POST` | `/reviews` | Create a new review | Customer Only |
+| `PUT` | `/reviews/{reviewId}` | Update an existing review | Review Owner |
+| `DELETE` | `/reviews/update/{reviewId}` | Delete a review | Review Owner |
+| `GET` | `/reviews/room/{roomId}` | Get reviews for a room | Public |
+| `GET` | `/reviews/my-reviews` | Get current user's reviews | Customer Only |
+| `GET` | `/reviews/room/{roomId}/summary` | Get room review summary | Public |
+| `GET` | `/reviews/{reviewId}` | Get review by ID | Public |
+| `GET` | `/reviews/admin/all` | Get all reviews (paginated) | Admin Only |
+| `DELETE` | `/reviews/admin/{reviewId}` | Delete any review | Admin Only |
+
+
+**Review System Features:**
+- Users can only review rooms they have completed bookings for
+- One review per user per room
+- Rating scale: 1-5 stars
+- Review summary with rating distribution
+- Pagination support for all endpoints
 
 ### 📅 Booking Management Endpoints
 
@@ -218,7 +264,7 @@ src/
 ├── main/
 │   ├── java/project/hotel_booking_system/
 │   │   ├── 🔧 configuration/    # System configurations
-│   │   ├── 🎮 controller/       # REST API endpoints
+│   │   ├── 🎮 controller/       # REST API endpoints 
 │   │   ├── 📝 dto/             # Data Transfer Objects
 │   │   ├── 🗂️ model/           # Entity models
 │   │   ├── ⚠️ exception/        # Custom exceptions
@@ -240,18 +286,26 @@ src/
 #### 🌍 Public Endpoints (No Authentication Required)
 - User registration
 - Login
-- Room search
-- Basic room information
+- Room search and information
+- Room availability checking
+- Review browsing
+- Review summaries
 
 #### 🔒 Protected Endpoints (JWT Required)
 - Booking management
 - Payment processing
 - User profile management
+- Creating and managing reviews
 
 #### 👑 Admin Endpoints (ADMIN Role Required)
-- Payment management
 - User management
+- Room management
+- Payment management
+- Room availability blocking/unblocking
+- Review moderation
+- Revenue reports
 - System configuration
+
 
 ## 💳 VNPay Integration
 
