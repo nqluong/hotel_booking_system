@@ -39,6 +39,11 @@ public class SecurityConfig {
     };
     private final String[] PUBLIC_GET_ENDPOINTS = {
             "/rooms", "/rooms/**","/room-images","/room-images/**", "reviews/*", "/reviews/room/**",
+            "/rooms/*/availability",
+            "/rooms/availability",
+            "/rooms/*/availability/quick",
+            "/rooms/availability/calendar",
+            "/rooms/*/blocked-dates"
     };
 
     @Autowired

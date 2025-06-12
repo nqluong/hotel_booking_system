@@ -72,7 +72,10 @@ public enum ErrorCode {
     //Response related
     REVIEW_NOT_FOUND("Review not found", HttpStatus.NOT_FOUND),
     REVIEW_ALREADY_EXISTS("User already reviewed this room", HttpStatus.CONFLICT),
-    REVIEW_NOT_ALLOWED("User must complete a booking before reviewing", HttpStatus.BAD_REQUEST);
+    REVIEW_NOT_ALLOWED("User must complete a booking before reviewing", HttpStatus.BAD_REQUEST),
+
+    //Room related
+    ROOM_ALREADY_BOOKED("Room is already booked for the selected dates", HttpStatus.CONFLICT);
 
     private String message;
     private HttpStatusCode httpStatusCode;

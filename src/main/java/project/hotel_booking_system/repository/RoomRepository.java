@@ -2,6 +2,7 @@ package project.hotel_booking_system.repository;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -60,4 +61,11 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
                                    @Param("maxPrice") BigDecimal maxPrice,
                                    @Param("status") RoomStatus status,
                                    Pageable pageable);
+
+
+    @Query("SELECT r FROM Room r WHERE r.roomStatus = 'AVAILABLE' ORDER BY r.roomNumber")
+    List<Room> findAllAvailableRooms();
+
+    @Query("SELECT r FROM Room r WHERE r.roomStatus = 'AVAILABLE' ORDER BY r.roomNumber")
+    Page<Room> findAllAvailableRooms(Pageable pageable);
 }
