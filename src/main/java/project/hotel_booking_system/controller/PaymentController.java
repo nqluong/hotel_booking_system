@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,7 +34,8 @@ import project.hotel_booking_system.service.payment.PaymentService;
 @Tag(name = "Payment Management", description = "APIs for managing payments")
 public class PaymentController {
 
-    private final PaymentService paymentService;
+    @Autowired
+    private PaymentService paymentService;
 
     @GetMapping
     @Operation(

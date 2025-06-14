@@ -1,16 +1,18 @@
 # 🏨 Hotel Booking System
 
-A comprehensive hotel booking management system built with Spring Boot, providing robust APIs for room reservations, user authentication, payment processing, reviews, and room availability management.
+A comprehensive hotel booking management system built with Spring Boot, providing robust APIs for room reservations, user authentication, payment processing, refund management, reviews, and room availability management.
 
 ## 📋 Overview
 
-This application is a modern hotel booking management system featuring high security, online payment integration, role-based user management, customer reviews, and advanced room availability tracking designed for both customers and hotel administrators.
+This application is a modern hotel booking management system featuring high security, online payment integration, role-based user management, customer reviews, refund processing with cancellation policies, and advanced room availability tracking designed for both customers and hotel administrators.
 
 ## ✨ Key Features
 
 - 🔐 **User Authentication & Authorization** - Secure JWT-based authentication
 - 🏠 **Room Booking Management** - Complete reservation lifecycle management
 - 💳 **VNPay Payment Integration** - Secure online payment processing
+- 💰 **Refund Management** - Automated refund processing with cancellation policies
+- 🚫 **Booking Cancellation** - Smart cancellation with refund eligibility checking
 - 👥 **Role-based Access Control** - Admin and Customer role separation
 - ⭐ **Review System** - Customer reviews and ratings for rooms
 - 📅 **Room Availability Management** - Advanced calendar and availability tracking
@@ -184,7 +186,6 @@ Interactive API documentation is available at:
 | `GET` | `/reviews/admin/all` | Get all reviews (paginated) | Admin Only |
 | `DELETE` | `/reviews/admin/{reviewId}` | Delete any review | Admin Only |
 
-
 **Review System Features:**
 - Users can only review rooms they have completed bookings for
 - One review per user per room
@@ -198,8 +199,11 @@ Interactive API documentation is available at:
 | Method | Endpoint | Description | Access Level  |
 |--------|----------|-------------|---------------|
 | `POST` | `/bookings` | Create new booking | Authenticated |
-| `GET` | `/bookings` | Get user's bookings | Authenticated |
+| `GET` | `/bookings/my` | Get user's bookings (paginated) | Authenticated |
 | `GET` | `/bookings/{id}` | Get booking details | Owner/Admin   |
+| `POST` | `/bookings/{bookingId}/cancel-with-refund` | Cancel booking with refund processing | Owner Only |
+| `GET` | `/bookings/{bookingId}/refund-status` | Get refund status for booking | Owner Only |
+
 
 #### Admin Booking Management (`/admin/bookings`)
 | Method | Endpoint                         | Description            | Access Level |
@@ -213,6 +217,20 @@ Interactive API documentation is available at:
 | `PUT`  | `/admin/booking/{id}/check-in`   | Check-in guest         | Admin Only   |
 | `PUT`  | `/admin/booking/{id}/check-out`  | Check-out guest        | Admin Only   |
 | `PUT`  | `/admin/booking/{id}/cancel`     | Cancel booking         | Admin Only   |
+
+### 💰 Refund Management Endpoints (`/refunds`)
+
+| Method | Endpoint | Description | Access Level |
+|--------|----------|-------------|--------------|
+| `GET` | `/refunds/eligibility/{bookingId}` | Check refund eligibility for booking | Authenticated |
+| `GET` | `/refunds/status/{bookingId}` | Get refund status and details | Authenticated |
+
+**Refund Statuses:**
+- `PENDING`: Refund request initiated
+- `PROCESSING`: Refund being processed by payment gateway
+- `COMPLETED`: Refund successfully processed
+- `FAILED`: Refund processing failed
+- `CANCELLED`: Refund request cancelled
 
 ### 💳 Payment Endpoints
 
@@ -293,9 +311,12 @@ src/
 
 #### 🔒 Protected Endpoints (JWT Required)
 - Booking management
+- Booking cancellation and refunds
 - Payment processing
 - User profile management
 - Creating and managing reviews
+- Refund eligibility checking
+- Refund status tracking
 
 #### 👑 Admin Endpoints (ADMIN Role Required)
 - User management
@@ -325,6 +346,13 @@ vnpay:
 3. 💳 **Customer completes payment on VNPay**
 4. 🔄 **VNPay sends callback to system**
 5. ✅ **System validates and processes result**
+
+### Refund Flow
+1. 🚫 **Customer cancels booking**
+2. 🔍 **System checks refund eligibility**
+3. 💰 **Refund amount calculated**
+4. 🔄 **Refund processed via VNPay API**
+5. 📊 **Status tracked and updated**
 
 ## 🔧 Default Configuration
 

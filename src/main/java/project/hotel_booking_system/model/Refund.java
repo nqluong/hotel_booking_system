@@ -48,6 +48,9 @@ public class Refund {
     @Column(name = "processed_at")
     LocalDateTime processedAt;
 
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

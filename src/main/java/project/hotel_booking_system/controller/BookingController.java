@@ -54,7 +54,10 @@ public class BookingController {
 
     @Operation(
             summary = "Create a new booking",
-            description = "Create a new room booking with the specified dates and room",
+            description = "Creates a new booking for the authenticated user. " +
+                    "Validates room availability for the specified dates, " +
+                    "calculates total price, and reserves the room. " +
+                    "The booking will be in PENDING status initially.",
             security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
@@ -107,7 +110,10 @@ public class BookingController {
 
     @Operation(
             summary = "Get booking details",
-            description = "Get detailed information about a specific booking belonging to current user",
+            description = "Retrieves detailed information about a specific booking. " +
+                    "Users can only access their own bookings. " +
+                    "Returns complete booking information including room details, dates, " +
+                    "pricing, and current status.",
             security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
@@ -134,6 +140,14 @@ public class BookingController {
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseDTO.class)
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Booking not found with the specified ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
             )
     })
     @GetMapping("/{id}")
@@ -155,13 +169,31 @@ public class BookingController {
 
     @Operation(
             summary = "Get user bookings",
-            description = "Get all bookings for current authenticated user with pagination",
+            description = "Retrieves all bookings belonging to the authenticated user. " +
+                    "Results are paginated and sorted by creation date. " +
+                    "Includes booking status, dates, room information, and pricing for each booking.",
             security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
                     description = "Bookings retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication required - JWT token missing or invalid",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid pagination parameters ",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseDTO.class)
@@ -189,8 +221,77 @@ public class BookingController {
 
 
     @PostMapping("/{bookingId}/cancel-with-refund")
-    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(
+            summary = "Cancel booking with refund processing",
+            description = "Cancels a booking and processes refund based on the hotel's cancellation policy. " +
+                    "Refund amount depends on how far in advance the cancellation is made. " +
+                    "The booking status will be updated to CANCELLED only after successful refund processing. " +
+                    "If no refund is applicable, the booking is cancelled immediately.",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Booking cancelled and refund processed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "202",
+                    description = "Refund is being processed. Booking will be cancelled once refund is completed.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Booking cannot be cancelled (e.g., already cancelled, checked-in, or refund processing failed)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication required - JWT token missing or invalid",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - The booking does not belong to the current user",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Booking not found with the specified ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error during refund processing",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            )
+    })
     public ApiResponseDTO<RefundResponseDTO> cancelBookingWithRefund(
+            @Parameter(
+                    description = "Unique identifier of the booking to cancel and refund",
+                    required = true
+            )
             @PathVariable Long bookingId) {
 
         try {
@@ -236,9 +337,56 @@ public class BookingController {
             throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
+
     @GetMapping("/{bookingId}/refund-status")
-    @SecurityRequirement(name = "bearer-jwt")
-    public ApiResponseDTO<RefundResponseDTO> getRefundStatus(@PathVariable Long bookingId) {
+    @Operation(
+            summary = "Get refund status for a booking",
+            description = "Retrieves the current refund status and details for a specific booking. " +
+                    "Returns information about refund amount, processing status, " +
+                    "transaction ID, and estimated completion time. " +
+                    "Only shows refunds associated with the current user's bookings.",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Refund status retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication required - JWT token missing or invalid",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - The booking does not belong to the current user",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No refund found for this booking (booking may not exist or no refund was processed)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseDTO.class)
+                    )
+            )
+    })
+    public ApiResponseDTO<RefundResponseDTO> getRefundStatus(
+            @Parameter(
+                    description = "Unique identifier of the booking to check refund status for",
+                    required = true
+            )
+            @PathVariable Long bookingId) {
         try {
             RefundResponseDTO refundResponse = refundService.getRefundByBookingId(bookingId);
             return ApiResponseDTO.<RefundResponseDTO>builder()

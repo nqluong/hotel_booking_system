@@ -9,7 +9,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import project.hotel_booking_system.configuration.VnPayConfig;
-import project.hotel_booking_system.dto.request.payment_request.RefundRequestDTO;
 import project.hotel_booking_system.dto.response.RefundResponseDTO;
 import project.hotel_booking_system.dto.response.VNPayRefundResponse;
 import project.hotel_booking_system.enums.PaymentMethod;
@@ -18,10 +17,8 @@ import project.hotel_booking_system.exception.AppException;
 import project.hotel_booking_system.exception.ErrorCode;
 import project.hotel_booking_system.exception.ResourceNotFoundException;
 import project.hotel_booking_system.mapper.RefundMapper;
-import project.hotel_booking_system.model.Booking;
 import project.hotel_booking_system.model.Payment;
 import project.hotel_booking_system.model.Refund;
-import project.hotel_booking_system.repository.BookingRepository;
 import project.hotel_booking_system.repository.PaymentRepository;
 import project.hotel_booking_system.repository.RefundRepository;
 
@@ -30,12 +27,9 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -43,6 +37,16 @@ import java.util.*;
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class VNPayGatewayServiceImpl implements VNPayGatewayService {
+
+    // Constants
+    String DEFAULT_IP = "127.0.0.1";
+    String LOCALHOST_IPV6 = "0:0:0:0:0:0:0:1";
+    String VNPAY_TIMEZONE = "Asia/Ho_Chi_Minh";
+    String DATE_FORMAT = "yyyyMMddHHmmss";
+    String REFUND_COMMAND = "refund";
+    String TRANSACTION_TYPE_REFUND = "03"; //Partial refund
+    String SUCCESS_CODE = "00";
+    int AMOUNT_MULTIPLIER = 100;
 
     VnPayConfig vnPayConfig;
     RefundRepository refundRepository;
@@ -54,67 +58,32 @@ public class VNPayGatewayServiceImpl implements VNPayGatewayService {
 
     @Override
     public String generatePaymentUrl(Long paymentId, BigDecimal amount, String clientIp) {
-        if (clientIp == null || clientIp.isEmpty() || "0:0:0:0:0:0:0:1".equals(clientIp)) {
-            clientIp = "127.0.0.1";
-        }
+        clientIp = normalizeClientIp(clientIp);
 
-        String vnp_Version = vnPayConfig.getVersion();
-        String vnp_Command = vnPayConfig.getCommand();
-        String vnp_TmnCode = vnPayConfig.getTmnCode();
-        String vnp_CurrCode = vnPayConfig.getCurrCode();
-        String vnp_Locale = vnPayConfig.getLocale();
-        String vnp_OrderType = vnPayConfig.getOrderType();
+        Payment payment = getPaymentById(paymentId);
+        String uniqueTxnRef = generateUniqueTxnRef(paymentId);
 
-        // Generate unique crypto transaction for each payment
-        String uniqueTxnRef = paymentId + "_" + System.currentTimeMillis();
+        updatePaymentWithTxnRef(payment, uniqueTxnRef);
 
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
-        payment.setVnpTxnRef(uniqueTxnRef);
-        paymentRepository.save(payment);
+        Map<String, String> vnpParams = buildPaymentParameters(
+                payment, amount, uniqueTxnRef, clientIp
+        );
 
-        String vnp_Amount = String.valueOf(amount.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_HALF_UP).longValue());
-        Map<String, String> vnp_Params = new HashMap<>();
-        vnp_Params.put("vnp_Version", vnp_Version);
-        vnp_Params.put("vnp_Command", vnp_Command);
-        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
-        vnp_Params.put("vnp_Amount", vnp_Amount);
-        vnp_Params.put("vnp_CurrCode", vnp_CurrCode);
-        vnp_Params.put("vnp_OrderType", vnp_OrderType);
-
-        // Use unique cryto transaction reference
-        vnp_Params.put("vnp_TxnRef", uniqueTxnRef);
-
-        vnp_Params.put("vnp_OrderInfo", "Payment for booking with ID: " + paymentId);
-
-        vnp_Params.put("vnp_Locale", vnp_Locale);
-
-        vnp_Params.put("vnp_ReturnUrl", vnPayConfig.getReturnUrl());
-
-        // Current time in VN timezone
-        LocalDateTime vnpCreateDate = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        String vnp_CreateDate = vnpCreateDate.format(formatter);
-        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
-        vnp_Params.put("vnp_IpAddr", clientIp);
-
-
-        String queryString = buildQueryString(vnp_Params);
-
-        String vnp_SecureHash = hmacSHA512(vnPayConfig.getHashSecret(), queryString);
-        String fullUrl = vnPayConfig.getPaymentUrl() + "?" + queryString + "&vnp_SecureHash=" + vnp_SecureHash;
-
-       // String fullUrl = vnPayConfig.getPaymentUrl() + "?" + query;
-
-        // Save the relationship between uniqueTxnRef and payment ID for callback handling
+        String paymentUrl = buildPaymentUrl(vnpParams);
         updateTransactionMapping(uniqueTxnRef, paymentId);
 
-        return fullUrl;
+        log.info("Generated payment URL for payment ID: {}, txnRef: {}", paymentId, uniqueTxnRef);
+        return paymentUrl;
     }
 
     @Override
     public Map<String, String> parseCallback(String vnPayResponse) {
         Map<String, String> vnpParams = new HashMap<>();
+
+        if (vnPayResponse == null || vnPayResponse.isEmpty()) {
+            log.warn("Empty VNPay response received");
+            return vnpParams;
+        }
 
         String[] params = vnPayResponse.split("&");
         for (String param : params) {
@@ -129,26 +98,13 @@ public class VNPayGatewayServiceImpl implements VNPayGatewayService {
 
     @Override
     public Long extractPaymentId(String txnRef) {
+
+        validateTxnRef(txnRef);
+
         if (txnRef.contains("_")) {
-            Long paymentId = getPaymentIdFromTransactionMap(txnRef);
-            if (paymentId == null) {
-                try {
-                    paymentId = Long.parseLong(txnRef.split("_")[0]);
-                    log.warn("Transaction mapping not found, extracted payment ID from transaction reference: {}", paymentId);
-                    return paymentId;
-                } catch (Exception e) {
-                    log.error("Failed to parse payment ID from transaction reference: {}", txnRef, e);
-                    throw new ResourceNotFoundException("Invalid transaction reference: " + txnRef);
-                }
-            }
-            return paymentId;
+            return extractPaymentIdFromCompositeTxnRef(txnRef);
         } else {
-            try {
-                return Long.parseLong(txnRef);
-            } catch (NumberFormatException e) {
-                log.error("Failed to parse payment ID: {}", txnRef, e);
-                throw new ResourceNotFoundException("Invalid payment ID: " + txnRef);
-            }
+            return parsePaymentIdFromString(txnRef);
         }
     }
 
@@ -164,40 +120,23 @@ public class VNPayGatewayServiceImpl implements VNPayGatewayService {
 
     @Override
     public RefundResponseDTO processVNPayRefund(Refund refund) {
-
-        if (refund.getPayment().getPaymentMethod() != PaymentMethod.VNPAY) {
-            throw new AppException(ErrorCode.INVALID_PAYMENT_METHOD_FOR_REFUND);
-        }
+        validateRefundPaymentMethod(refund);
 
         try {
-            refund.setStatus(RefundStatus.PROCESSING);
-            refundRepository.save(refund);
+            updateRefundStatus(refund, RefundStatus.PROCESSING);
 
-            // Generate VNPay refund parameters
             Map<String, String> refundParams = buildRefundParameters(refund);
-
-            // Call VNPay refund API
             VNPayRefundResponse refundResult = callVNPayRefundAPI(refundParams);
 
-            if (refundResult.isSuccess()) {
-                String vnpayRefundId = generateRefundTransactionId();
-                refund.setVnpayRefundId(vnpayRefundId);
-                refund.setStatus(RefundStatus.COMPLETED);
-                refund.setProcessedAt(LocalDateTime.now());
+            Refund processedRefund = handleRefundResult(refund, refundResult);
 
-            } else {
-                refund.setStatus(RefundStatus.FAILED);
-                log.error("VNPay refund failed for refund ID: {}", refund.getId());
-            }
+            log.info("VNPay refund processed for refund ID: {}, status: {}",
+                    refund.getId(), processedRefund.getStatus());
 
-            Refund processedRefund = refundRepository.save(refund);
             return refundMapper.toDTO(processedRefund);
 
         } catch (Exception e) {
-            log.error("Failed to process VNPay refund for refund ID: {}", refund.getId(), e);
-            refund.setStatus(RefundStatus.FAILED);
-            refundRepository.save(refund);
-            throw new AppException(ErrorCode.REFUND_PROCESSING_FAILED);
+            return handleRefundProcessingError(refund, e);
         }
     }
 
@@ -209,51 +148,166 @@ public class VNPayGatewayServiceImpl implements VNPayGatewayService {
         return refundMapper.toDTO(refund);
     }
 
-    private Map<String, String> buildRefundParameters(Refund refund) {
+    private String normalizeClientIp(String clientIp) {
+        if (clientIp == null || clientIp.isEmpty() || LOCALHOST_IPV6.equals(clientIp)) {
+            return DEFAULT_IP;
+        }
+        return clientIp;
+    }
+
+    private Payment getPaymentById(Long paymentId) {
+        return paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + paymentId));
+    }
+
+    private String generateUniqueTxnRef(Long paymentId) {
+        return paymentId + "_" + System.currentTimeMillis();
+    }
+
+    private void updatePaymentWithTxnRef(Payment payment, String txnRef) {
+        payment.setVnpTxnRef(txnRef);
+        paymentRepository.save(payment);
+    }
+
+    private Map<String, String> buildPaymentParameters(Payment payment, BigDecimal amount,
+                                                       String txnRef, String clientIp) {
         Map<String, String> params = new HashMap<>();
 
-        // Current time in VN timezone
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-
-        // Generate unique request ID
-        String vnp_RequestId = "REF_" + refund.getId() + "_" + System.currentTimeMillis();
-
-        params.put("vnp_RequestId", vnp_RequestId);
         params.put("vnp_Version", vnPayConfig.getVersion());
-        params.put("vnp_Command", "refund");
+        params.put("vnp_Command", vnPayConfig.getCommand());
         params.put("vnp_TmnCode", vnPayConfig.getTmnCode());
-        params.put("vnp_TransactionType", "03"); //
-        params.put("vnp_TxnRef", getOriginalTxnRef(refund));
-        params.put("vnp_Amount", String.valueOf(refund.getRefundAmount()
-                .multiply(BigDecimal.valueOf(100)).longValue()));
-        params.put("vnp_OrderInfo", "Refund for booking ID: " + refund.getBooking().getId());
-        params.put("vnp_TransactionNo", refund.getPayment().getTransactionId());
-        params.put("vnp_TransactionDate", refund.getPayment().getPaymentDate().format(formatter));
-        params.put("vnp_CreateBy", "User_" + refund.getBooking().getUser().getFullname());
-        params.put("vnp_CreateDate", now.format(formatter));
-        params.put("vnp_IpAddr", "127.0.0.1");
+        params.put("vnp_Amount", formatAmount(amount));
+        params.put("vnp_CurrCode", vnPayConfig.getCurrCode());
+        params.put("vnp_OrderType", vnPayConfig.getOrderType());
+        params.put("vnp_TxnRef", txnRef);
+        params.put("vnp_OrderInfo", "Payment for booking with ID: " + payment.getId());
+        params.put("vnp_Locale", vnPayConfig.getLocale());
+        params.put("vnp_ReturnUrl", vnPayConfig.getReturnUrl());
+        params.put("vnp_CreateDate", getCurrentTimeVN());
+        params.put("vnp_IpAddr", clientIp);
 
         return params;
     }
 
+    private String formatAmount(BigDecimal amount) {
+        return String.valueOf(amount.multiply(BigDecimal.valueOf(AMOUNT_MULTIPLIER))
+                .setScale(0, BigDecimal.ROUND_HALF_UP)
+                .longValue());
+    }
+
+    private String getCurrentTimeVN() {
+        LocalDateTime now = LocalDateTime.now(ZoneId.of(VNPAY_TIMEZONE));
+        return now.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+    }
+
+    private String buildPaymentUrl(Map<String, String> params) {
+        String queryString = buildQueryString(params);
+        String secureHash = hmacSHA512(vnPayConfig.getHashSecret(), queryString);
+
+        return vnPayConfig.getPaymentUrl() + "?" + queryString + "&vnp_SecureHash=" + secureHash;
+    }
+
+    private void validateTxnRef(String txnRef) {
+        if (txnRef == null || txnRef.isEmpty()) {
+            throw new ResourceNotFoundException("Transaction reference cannot be null or empty");
+        }
+    }
+
+    private Long extractPaymentIdFromCompositeTxnRef(String txnRef) {
+        Long paymentId = getPaymentIdFromTransactionMap(txnRef);
+        if (paymentId == null) {
+            try {
+                paymentId = Long.parseLong(txnRef.split("_")[0]);
+                log.warn("Transaction mapping not found, extracted payment ID from txnRef: {}", paymentId);
+            } catch (Exception e) {
+                log.error("Failed to parse payment ID from transaction reference: {}", txnRef, e);
+                throw new ResourceNotFoundException("Invalid transaction reference format: " + txnRef);
+            }
+        }
+        return paymentId;
+    }
+
+    private Long parsePaymentIdFromString(String txnRef) {
+        try {
+            return Long.parseLong(txnRef);
+        } catch (NumberFormatException e) {
+            log.error("Failed to parse payment ID: {}", txnRef, e);
+            throw new ResourceNotFoundException("Invalid payment ID format: " + txnRef);
+        }
+    }
+
+    private void validateRefundPaymentMethod(Refund refund) {
+        if (refund.getPayment().getPaymentMethod() != PaymentMethod.VNPAY) {
+            throw new AppException(ErrorCode.INVALID_PAYMENT_METHOD_FOR_REFUND);
+        }
+    }
+
+    private void updateRefundStatus(Refund refund, RefundStatus status) {
+        refund.setStatus(status);
+        refundRepository.save(refund);
+    }
+
+    private Refund handleRefundResult(Refund refund, VNPayRefundResponse refundResult) {
+        if (refundResult.isSuccess()) {
+            refund.setVnpayRefundId(generateRefundTransactionId());
+            refund.setStatus(RefundStatus.COMPLETED);
+            refund.setProcessedAt(LocalDateTime.now());
+            log.info("VNPay refund successful for refund ID: {}", refund.getId());
+        } else {
+            refund.setStatus(RefundStatus.FAILED);
+            log.error("VNPay refund failed for refund ID: {}, message: {}",
+                    refund.getId(), refundResult.getMessage());
+        }
+
+        return refundRepository.save(refund);
+    }
+
+    private RefundResponseDTO handleRefundProcessingError(Refund refund, Exception e) {
+        log.error("Failed to process VNPay refund for refund ID: {}", refund.getId(), e);
+        refund.setStatus(RefundStatus.FAILED);
+        Refund failedRefund = refundRepository.save(refund);
+        throw new AppException(ErrorCode.REFUND_PROCESSING_FAILED);
+    }
+
+    private Map<String, String> buildRefundParameters(Refund refund) {
+        Map<String, String> params = new HashMap<>();
+
+        String vnpRequestId = generateRefundRequestId(refund);
+        String currentTime = getCurrentTimeVN();
+
+        params.put("vnp_RequestId", vnpRequestId);
+        params.put("vnp_Version", vnPayConfig.getVersion());
+        params.put("vnp_Command", REFUND_COMMAND);
+        params.put("vnp_TmnCode", vnPayConfig.getTmnCode());
+        params.put("vnp_TransactionType", TRANSACTION_TYPE_REFUND);
+        params.put("vnp_TxnRef", getOriginalTxnRef(refund));
+        params.put("vnp_Amount", formatRefundAmount(refund.getRefundAmount()));
+        params.put("vnp_OrderInfo", "Refund for booking ID: " + refund.getBooking().getId());
+        params.put("vnp_TransactionNo", refund.getPayment().getTransactionId());
+        params.put("vnp_TransactionDate", formatTransactionDate(refund.getPayment().getPaymentDate()));
+        params.put("vnp_CreateBy", "User_" + refund.getBooking().getUser().getFullname());
+        params.put("vnp_CreateDate", currentTime);
+        params.put("vnp_IpAddr", DEFAULT_IP);
+
+        return params;
+    }
+
+    private String generateRefundRequestId(Refund refund) {
+        return "REF_" + refund.getId() + "_" + System.currentTimeMillis();
+    }
+
+    private String formatRefundAmount(BigDecimal refundAmount) {
+        return String.valueOf(refundAmount.multiply(BigDecimal.valueOf(AMOUNT_MULTIPLIER)).longValue());
+    }
+
+    private String formatTransactionDate(LocalDateTime paymentDate) {
+        return paymentDate.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+    }
+
     private VNPayRefundResponse callVNPayRefundAPI(Map<String, String> refundParams) {
         try {
-
-            Map<String, String> requestBody = new HashMap<>(refundParams);
-            String secureHash = buildRefundSignature(refundParams);
-            requestBody.put("vnp_SecureHash", secureHash);
-
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Accept", "application/json");
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            String jsonBody = objectMapper.writeValueAsString(requestBody);
-
-            HttpEntity<String> request = new HttpEntity<>(jsonBody, headers);
-
+            Map<String, String> requestBody = prepareRefundRequestBody(refundParams);
+            HttpEntity<String> request = createRefundHttpRequest(requestBody);
 
             ResponseEntity<Map> response = restTemplate.exchange(
                     vnPayConfig.getRefundUrl(),
@@ -262,60 +316,74 @@ public class VNPayGatewayServiceImpl implements VNPayGatewayService {
                     Map.class
             );
 
-            // Modified: Log full response for better debugging
-            log.info("VNPay refund API response: status={}, body={}",
-                    response.getStatusCode(), response.getBody());
+            log.info("VNPay refund API response: status={}", response.getStatusCode());
+            log.debug("VNPay refund API response body: {}", response.getBody());
+
             return parseRefundResponse(response.getBody());
+
         } catch (Exception e) {
             log.error("Error calling VNPay refund API: {}", e.getMessage(), e);
             return VNPayRefundResponse.builder()
+                    .success(false)
                     .message("API call exception: " + e.getMessage())
                     .build();
         }
     }
 
+    private Map<String, String> prepareRefundRequestBody(Map<String, String> refundParams) {
+        Map<String, String> requestBody = new HashMap<>(refundParams);
+        String secureHash = buildRefundSignature(refundParams);
+        requestBody.put("vnp_SecureHash", secureHash);
+        return requestBody;
+    }
+
+    private HttpEntity<String> createRefundHttpRequest(Map<String, String> requestBody) throws Exception {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Accept", "application/json");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonBody = objectMapper.writeValueAsString(requestBody);
+
+        return new HttpEntity<>(jsonBody, headers);
+    }
+
     private VNPayRefundResponse parseRefundResponse(Map<String, Object> responseBody) {
         try {
-
             if (responseBody == null) {
-                return VNPayRefundResponse.builder()
-                        .success(false)
-                        .message("Empty response from VNPay")
-                        .build();
+                return createFailedRefundResponse("Empty response from VNPay");
             }
+
             String responseCode = (String) responseBody.get("vnp_ResponseCode");
             String message = (String) responseBody.get("vnp_Message");
-            String transNo = (String) responseBody.get("vnp_TransactionNo");
 
-            if ("00".equals(responseCode)) {
+            if (SUCCESS_CODE.equals(responseCode)) {
+                String transNo = (String) responseBody.get("vnp_TransactionNo");
                 return VNPayRefundResponse.builder()
                         .success(true)
                         .transNo(transNo)
                         .message(message)
                         .build();
             } else {
-                return VNPayRefundResponse.builder()
-                        .success(false)
-                        .message("VNPay error code: " + responseCode + ", Message: " + message)
-                        .build();
+                return createFailedRefundResponse("VNPay error code: " + responseCode + ", Message: " + message);
             }
+
         } catch (Exception e) {
             log.error("Error parsing VNPay refund response", e);
-            return VNPayRefundResponse.builder()
-                    .success(false)
-                    .message("Failed to parse response")
-                    .build();
+            return createFailedRefundResponse("Failed to parse response");
         }
+    }
+
+    private VNPayRefundResponse createFailedRefundResponse(String message) {
+        return VNPayRefundResponse.builder()
+                .success(false)
+                .message(message)
+                .build();
     }
 
     private String getOriginalTxnRef(Refund refund) {
         String vnpTxnRef = refund.getPayment().getVnpTxnRef();
-
-        if (vnpTxnRef != null && !vnpTxnRef.isEmpty()) {
-            return vnpTxnRef;
-        }
-
-        return refund.getPayment().getId().toString();
+        return (vnpTxnRef != null && !vnpTxnRef.isEmpty()) ? vnpTxnRef : refund.getPayment().getId().toString();
     }
 
     private void updateTransactionMapping(String txnRef, Long paymentId) {
@@ -326,42 +394,38 @@ public class VNPayGatewayServiceImpl implements VNPayGatewayService {
     private Long getPaymentIdFromTransactionMap(String txnRef) {
         Long paymentId = transactionMap.get(txnRef);
         if (paymentId != null) {
-            log.info("Found payment ID {} for transaction reference {}", paymentId, txnRef);
+            log.debug("Found payment ID {} for transaction reference {}", paymentId, txnRef);
         }
         return paymentId;
     }
 
     private String buildRefundSignature(Map<String, String> params) {
         StringBuilder data = new StringBuilder();
-        data.append(params.get("vnp_RequestId")).append("|");
-        data.append(params.get("vnp_Version")).append("|");
-        data.append(params.get("vnp_Command")).append("|");
-        data.append(params.get("vnp_TmnCode")).append("|");
-        data.append(params.get("vnp_TransactionType")).append("|");
-        data.append(params.get("vnp_TxnRef")).append("|");
-        data.append(params.get("vnp_Amount")).append("|");
-        data.append(params.getOrDefault("vnp_TransactionNo", "")).append("|"); // Có thể null cho refund
-        data.append(params.get("vnp_TransactionDate")).append("|");
-        data.append(params.get("vnp_CreateBy")).append("|");
-        data.append(params.get("vnp_CreateDate")).append("|");
-        data.append(params.get("vnp_IpAddr")).append("|");
-        data.append(params.get("vnp_OrderInfo"));
+        data.append(params.get("vnp_RequestId")).append("|")
+                .append(params.get("vnp_Version")).append("|")
+                .append(params.get("vnp_Command")).append("|")
+                .append(params.get("vnp_TmnCode")).append("|")
+                .append(params.get("vnp_TransactionType")).append("|")
+                .append(params.get("vnp_TxnRef")).append("|")
+                .append(params.get("vnp_Amount")).append("|")
+                .append(params.getOrDefault("vnp_TransactionNo", "")).append("|")
+                .append(params.get("vnp_TransactionDate")).append("|")
+                .append(params.get("vnp_CreateBy")).append("|")
+                .append(params.get("vnp_CreateDate")).append("|")
+                .append(params.get("vnp_IpAddr")).append("|")
+                .append(params.get("vnp_OrderInfo"));
 
         String dataString = data.toString();
-        log.info("Data for signature: {}", dataString);
+        log.debug("Data for signature: {}", dataString);
 
         return hmacSHA512(vnPayConfig.getHashSecret(), dataString);
     }
 
     private String buildQueryString(Map<String, String> params) {
-
         Map<String, String> filteredParams = new HashMap<>();
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            // BỎ QUA vnp_SecureHash khi tạo query string
-            if (!"vnp_SecureHash".equals(entry.getKey())) {
-                filteredParams.put(entry.getKey(), entry.getValue());
-            }
-        }
+        params.entrySet().stream()
+                .filter(entry -> !"vnp_SecureHash".equals(entry.getKey()))
+                .forEach(entry -> filteredParams.put(entry.getKey(), entry.getValue()));
 
         List<String> fieldNames = new ArrayList<>(filteredParams.keySet());
         Collections.sort(fieldNames);
@@ -372,11 +436,11 @@ public class VNPayGatewayServiceImpl implements VNPayGatewayService {
         while (itr.hasNext()) {
             String fieldName = itr.next();
             String fieldValue = params.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+            if (fieldValue != null && !fieldValue.isEmpty()) {
                 try {
-                    query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8));
-                    query.append('=');
-                    query.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
+                    query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8))
+                            .append('=')
+                            .append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
                 } catch (Exception e) {
                     log.error("Error encoding VNPay parameters", e);
                 }
@@ -393,24 +457,29 @@ public class VNPayGatewayServiceImpl implements VNPayGatewayService {
     private String hmacSHA512(final String key, final String data) {
         try {
             if (key == null || data == null) {
-                throw new NullPointerException();
+                throw new IllegalArgumentException("Key and data cannot be null");
             }
+
             final Mac hmac512 = Mac.getInstance("HmacSHA512");
             byte[] hmacKeyBytes = key.getBytes(StandardCharsets.UTF_8);
             final SecretKeySpec secretKey = new SecretKeySpec(hmacKeyBytes, "HmacSHA512");
             hmac512.init(secretKey);
+
             byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
             byte[] result = hmac512.doFinal(dataBytes);
+
             StringBuilder sb = new StringBuilder(2 * result.length);
             for (byte b : result) {
                 sb.append(String.format("%02x", b & 0xff));
             }
             return sb.toString();
-        } catch (Exception ex) {
 
+        } catch (Exception ex) {
+            log.error("Error generating HMAC SHA512", ex);
             return "";
         }
     }
+
     private String generateRefundTransactionId() {
         return "RF_" + System.currentTimeMillis();
     }

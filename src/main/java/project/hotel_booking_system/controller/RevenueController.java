@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,7 +35,8 @@ import project.hotel_booking_system.service.common.RevenueReportService;
 @Tag(name = "Admin Revenue Reports", description = "API endpoints for generating revenue reports")
 public class RevenueController {
 
-    private final RevenueReportService revenueReportService;
+    @Autowired
+    private RevenueReportService revenueReportService;
     private final JdbcTemplate jdbcTemplate;
 
 

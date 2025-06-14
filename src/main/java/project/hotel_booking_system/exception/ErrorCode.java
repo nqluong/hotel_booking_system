@@ -69,6 +69,7 @@ public enum ErrorCode {
     PAYMENT_REQUIRED("Payment is required to complete this operation", HttpStatus.BAD_REQUEST),
     INCOMPLETE_PAYMENT("Full payment is required to complete checkout", HttpStatus.BAD_REQUEST),
     CASH_PAYMENT_REQUIRED("Cash payment confirmation is required", HttpStatus.BAD_REQUEST),
+    REFUND_ALREADY_COMPLETED("Refund has already been completed", HttpStatus.BAD_REQUEST),
 
     REFUND_NOT_ELIGIBLE("Booking is not eligible for refund", HttpStatus.BAD_REQUEST),
     INVALID_REFUND_AMOUNT("Invalid refund amount calculted", HttpStatus.BAD_REQUEST),
