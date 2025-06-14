@@ -19,4 +19,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     
     // Phương thức tìm danh sách payment theo booking_id không phân trang
     List<Payment> findByBookingId(Long bookingId);
+
+    void deleteByBookingId(Long id);
 }

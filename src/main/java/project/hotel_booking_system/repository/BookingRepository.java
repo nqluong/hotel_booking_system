@@ -1,5 +1,6 @@
 package project.hotel_booking_system.repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -46,4 +47,5 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findBookingsByDateRange(@Param("startDate") Date startDate,
                                           @Param("endDate") Date endDate);
 
+    List<Booking> findByStatusAndCreatedAtBefore(BookingStatus bookingStatus, LocalDateTime createdAtBefore);
 }
