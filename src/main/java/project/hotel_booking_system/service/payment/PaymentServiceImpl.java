@@ -2,6 +2,7 @@ package project.hotel_booking_system.service.payment;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import org.springframework.data.domain.Page;
@@ -145,18 +146,24 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponseDTO handleVnPayCallback(String vnPayResponse) {
+
+        log.info("Handling VNPay callback with response: {}", vnPayResponse);
         Map<String, String> vnpParams = vnPayGatewayService.parseCallback(vnPayResponse);
 
         String vnpTxnRef = vnpParams.get("vnp_TxnRef");
         String vnpResponseCode = vnpParams.get("vnp_ResponseCode");
-
+        String transactionId = vnpParams.get("vnp_TransactionNo");
+        String transactionDate = vnpParams.get("vnp_PayDate");
+        LocalDateTime transactionDateTime = LocalDateTime.parse(transactionDate, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         Long paymentId = vnPayGatewayService.extractPaymentId(vnpTxnRef);
 
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + paymentId));
 
+        log.info("Update payment found for booking ID: {}", payment.getBooking().getId());
         if ("00".equals(vnpResponseCode)) {
             payment.setStatus(PaymentStatus.COMPLETED);
+            payment.setTransactionId(transactionId);
             if(payment.getPaymentDate() == null) {
                 payment.setPaymentDate(LocalDateTime.now());
             }
@@ -166,7 +173,7 @@ public class PaymentServiceImpl implements PaymentService {
             log.warn("Payment failed for booking ID: {}, retry count: {}",
                     payment.getBooking().getId(), payment.getRetryCount());
         }
-
+        payment.setPaymentDate(transactionDateTime);
         Payment savedPayment = paymentRepository.save(payment);
         bookingStatusManager.updateBookingStatusAfterPayment(savedPayment);
 

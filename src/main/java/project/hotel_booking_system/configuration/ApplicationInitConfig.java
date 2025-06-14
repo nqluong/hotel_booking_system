@@ -9,6 +9,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.client.RestTemplate;
 import project.hotel_booking_system.enums.Role;
 import project.hotel_booking_system.model.User;
 import project.hotel_booking_system.repository.UserRepository;

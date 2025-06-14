@@ -46,6 +46,7 @@ vnpay:
   paymentUrl: "${PAY_URL}"
   hashSecret: "${SECRET_KEY}"
   returnUrl: "${RETURN_URL}"
+  refundUrl: "${REFUND_URL}"
 jwt:
   signer-key: "${SIGNER_KEY}"
   valid-duration: 3600 # in seconds

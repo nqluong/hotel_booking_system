@@ -43,7 +43,8 @@ public class SecurityConfig {
             "/rooms/availability",
             "/rooms/*/availability/quick",
             "/rooms/availability/calendar",
-            "/rooms/*/blocked-dates"
+            "/rooms/*/blocked-dates",
+            "payments/vnpay-callback"
     };
 
     @Autowired

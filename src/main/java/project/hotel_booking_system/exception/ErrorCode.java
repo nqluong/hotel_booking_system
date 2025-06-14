@@ -10,6 +10,7 @@ public enum ErrorCode {
     // General errors
     UNCATEGORIZED_EXCEPTION("Unknown error", HttpStatus.INTERNAL_SERVER_ERROR),
     VALIDATION_ERROR("Validation failed", HttpStatus.BAD_REQUEST),
+    INTERNAL_SERVER_ERROR("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // User related error codes
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
@@ -68,6 +69,12 @@ public enum ErrorCode {
     PAYMENT_REQUIRED("Payment is required to complete this operation", HttpStatus.BAD_REQUEST),
     INCOMPLETE_PAYMENT("Full payment is required to complete checkout", HttpStatus.BAD_REQUEST),
     CASH_PAYMENT_REQUIRED("Cash payment confirmation is required", HttpStatus.BAD_REQUEST),
+
+    REFUND_NOT_ELIGIBLE("Booking is not eligible for refund", HttpStatus.BAD_REQUEST),
+    INVALID_REFUND_AMOUNT("Invalid refund amount calculted", HttpStatus.BAD_REQUEST),
+    REFUND_ALREADY_EXISTS("Refund already exists for this booking", HttpStatus.CONFLICT),
+    INVALID_PAYMENT_METHOD_FOR_REFUND("Payment method does not support refund", HttpStatus.BAD_REQUEST),
+    REFUND_PROCESSING_FAILED("Failed to process refund with payment gateway", HttpStatus.INTERNAL_SERVER_ERROR),
 
     //Response related
     REVIEW_NOT_FOUND("Review not found", HttpStatus.NOT_FOUND),

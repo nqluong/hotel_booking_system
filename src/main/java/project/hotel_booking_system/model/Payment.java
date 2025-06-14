@@ -56,6 +56,12 @@ public class Payment {
     @Column(name = "status", nullable = false, length = 20)
     PaymentStatus status;
 
+    @Column(name = "transaction_id", length = 255)
+    String transactionId;
+
+    @Column(name = "vnp_txn_ref", length = 255)
+    String vnpTxnRef;
+
     @Column(name = "retry_count", nullable = false)
     @Builder.Default
     Integer retryCount = 0;

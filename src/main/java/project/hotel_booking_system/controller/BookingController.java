@@ -27,7 +27,13 @@ import project.hotel_booking_system.dto.request.booking_request.BookingCreationR
 import project.hotel_booking_system.dto.response.ApiResponseDTO;
 import project.hotel_booking_system.dto.response.BookingResponseDTO;
 import project.hotel_booking_system.dto.response.PaginationResponse;
+import project.hotel_booking_system.dto.response.RefundResponseDTO;
+import project.hotel_booking_system.enums.RefundStatus;
+import project.hotel_booking_system.exception.AppException;
+import project.hotel_booking_system.exception.ErrorCode;
+import project.hotel_booking_system.exception.ResourceNotFoundException;
 import project.hotel_booking_system.service.booking.CustomerBookingService;
+import project.hotel_booking_system.service.payment.RefundService;
 
 /**
  * Controller for handling booking-related operations for customers
@@ -40,6 +46,9 @@ public class BookingController {
 
     @Autowired
     private CustomerBookingService bookingService;
+
+    @Autowired
+    RefundService refundService;
 
     //Create a new booking
 
@@ -178,4 +187,71 @@ public class BookingController {
                 .build();
     }
 
+
+    @PostMapping("/{bookingId}/cancel-with-refund")
+    @SecurityRequirement(name = "bearer-jwt")
+    public ApiResponseDTO<RefundResponseDTO> cancelBookingWithRefund(
+            @PathVariable Long bookingId) {
+
+        try {
+            RefundResponseDTO refundResponse = refundService.processBookingRefund(bookingId);
+
+            if (refundResponse != null) {
+                if (refundResponse.getStatus() == RefundStatus.COMPLETED) {
+                    bookingService.cancelMyBooking(bookingId);
+                    return ApiResponseDTO.<RefundResponseDTO>builder()
+                            .status(HttpStatus.OK.value())
+                            .message("Booking cancelled and refund processed successfully")
+                            .result(refundResponse)
+                            .build();
+                } else if (refundResponse.getStatus() == RefundStatus.PROCESSING) {
+                    return ApiResponseDTO.<RefundResponseDTO>builder()
+                            .status(HttpStatus.ACCEPTED.value())
+                            .message("Refund is being processed. Booking will be cancelled once refund is completed.")
+                            .result(refundResponse)
+                            .build();
+                } else {
+                    // Refund failed
+                    return ApiResponseDTO.<RefundResponseDTO>builder()
+                            .status(HttpStatus.BAD_REQUEST.value())
+                            .message("Refund processing failed. Booking not cancelled.")
+                            .result(refundResponse)
+                            .build();
+                }
+            } else {
+                // No refund applicable, just cancel booking
+                bookingService.cancelMyBooking(bookingId);
+                return ApiResponseDTO.<RefundResponseDTO>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Booking cancelled - no refund applicable")
+                        .result(null)
+                        .build();
+            }
+
+        } catch (AppException e) {
+            log.error("Error processing refund for booking {}: {}", bookingId, e.getMessage());
+            throw e; // Let global exception handler deal with it
+        } catch (Exception e) {
+            log.error("Unexpected error processing refund for booking {}", bookingId, e);
+            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+    @GetMapping("/{bookingId}/refund-status")
+    @SecurityRequirement(name = "bearer-jwt")
+    public ApiResponseDTO<RefundResponseDTO> getRefundStatus(@PathVariable Long bookingId) {
+        try {
+            RefundResponseDTO refundResponse = refundService.getRefundByBookingId(bookingId);
+            return ApiResponseDTO.<RefundResponseDTO>builder()
+                    .status(HttpStatus.OK.value())
+                    .message("Refund status retrieved successfully")
+                    .result(refundResponse)
+                    .build();
+        } catch (ResourceNotFoundException e) {
+            return ApiResponseDTO.<RefundResponseDTO>builder()
+                    .status(HttpStatus.NOT_FOUND.value())
+                    .message("No refund found for this booking")
+                    .result(null)
+                    .build();
+        }
+    }
 }

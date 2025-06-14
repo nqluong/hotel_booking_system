@@ -115,7 +115,6 @@ public class CustomerBookingServiceImpl implements CustomerBookingService {
     public BookingResponseDTO cancelMyBooking(Long bookingId) {
         User currentUser = getCurrentUser();
 
-
         Booking booking = bookingCoreService.findBookingById(bookingId);
 
         if (!booking.getUser().getId().equals(currentUser.getId())) {

@@ -180,6 +180,7 @@ public class CustomerPaymentController {
             @RequestParam String vnp_Amount,
             @RequestParam String vnp_OrderInfo,
             @RequestParam String vnp_BankCode,
+            @RequestParam String vnp_PayDate,
             @RequestParam String vnp_TransactionNo) {
 
         log.info("Received VNPAY callback for transaction: {}", vnp_TransactionNo);
@@ -190,7 +191,8 @@ public class CustomerPaymentController {
         responseBuilder.append("vnp_Amount=").append(vnp_Amount).append("&");
         responseBuilder.append("vnp_OrderInfo=").append(vnp_OrderInfo).append("&");
         responseBuilder.append("vnp_BankCode=").append(vnp_BankCode).append("&");
-        responseBuilder.append("vnp_TransactionNo=").append(vnp_TransactionNo);
+        responseBuilder.append("vnp_TransactionNo=").append(vnp_TransactionNo).append("&");
+        responseBuilder.append("vnp_PayDate=").append(vnp_PayDate).append("&");
 
         PaymentResponseDTO paymentResponse = paymentService.handleVnPayCallback(responseBuilder.toString());
 
